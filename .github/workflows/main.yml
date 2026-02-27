@@ -35,11 +35,13 @@ jobs:
 
       # 万が一ダウンロードに失敗した時のためのリトライ処理を追加
       - name: Install dependencies with Retry
+        shell: bash  # ここを明示的にbashに指定します
         run: |
           for i in {1..3}; do
             python -m pip install --upgrade pip wheel && \
-            pip install -r requirements.txt && break || sleep 5
-          done.0
+            pip install -r requirements.txt && exit 0 || sleep 5
+          done
+          exit 1
 
       # --- 1. 静的解析フェーズ (Zero Tolerance) ---
       - name: 🛡️ Strict Linting (Ruff)
