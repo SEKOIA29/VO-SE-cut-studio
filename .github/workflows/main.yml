@@ -42,9 +42,14 @@ jobs:
       - name: 🛡️ Strict Linting & Auto-Fix (Ruff)
         shell: bash
         run: |
-          ruff check . --select E,F,W,I --fix --show-fixes --target-version py310
+          # 1. 自動修正を適用
+          ruff check . --select E,F,W,I --fix
+          ruff format .
+          
+          # 2. 修正後の状態を確認（まだ汚れがあれば、ここでエラーとして落とす）
+          ruff check . --select E,F,W,I
           ruff format . --check
-
+          
       - name: 🧪 Strict Type Intelligence (Pyright)
         shell: bash
         run: |
