@@ -1,0 +1,26 @@
+# --- GUI & Core ---
+PySide6
+numpy
+pymunk
+onnxruntime
+
+# --- Audio & Synthesis ---
+sounddevice
+soundfile
+pyopenjtalk
+
+# --- Utilities & NLP ---
+mido
+janome
+Pillow
+pykakasi
+chardet
+backports.tarfile
+scipy
+
+# --- Development & Quality Tools ---
+ruff
+pyright
+pytest
+pytest-qt
+pyinstaller==6.13.0
