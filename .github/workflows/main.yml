@@ -1,0 +1,138 @@
+name: "🚀 VO-SE Cut Studio: Absolute Professional Build"
+
+on:
+  push:
+    branches: [ main ]
+    tags: [ 'v*' ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  check-and-build:
+    name: 💎 Quality Gate & Build (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: true # 1つでもコケたら即中止。妥協は許さない。
+      matrix:
+        os: [windows-latest, macos-latest]
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive # C++コアの外部依存も確実に取得
+
+      - name: Setup Advanced Python Environment
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+
+      - name: Install Hardened Dependencies
+        run: |
+          python -m pip install --upgrade pip wheel setuptools
+          # 開発・検証・ビルドに必要な全ツールを固定
+          pip install ruff pyright pytest pytest-qt PySide6 numpy pymunk \
+                      onnxruntime pyopenjtalk janome sounddevice soundfile \
+                      Pillow scipy pyinstaller==6.13.0
+
+      # --- 1. 静的解析フェーズ (Zero Tolerance) ---
+      - name: 🛡️ Strict Linting (Ruff)
+        run: ruff check . --select E,F,W,I --target-version py310
+
+      - name: 🧪 Strict Type Intelligence (Pyright)
+        run: pyright .
+
+      # --- 2. コンパイルフェーズ (Native Optimization) ---
+      - name: 🛠️ Native Core Compilation
+        shell: bash
+        run: |
+          mkdir -p bin
+          if [ "${{ matrix.os }}" = "windows-latest" ]; then
+            # Windows: AVX2命令セット等、現代のCPUに最適化
+            g++ -std=c++17 -shared -fPIC -o bin/libvo_se_cut.dll src/core/*.cpp \
+                -Iinclude -O3 -mavx2 -static -static-libgcc -static-libstdc++
+          else
+            # Mac: Universal Binary (Intel/Apple Silicon) を意識したビルド
+            clang++ -std=c++17 -shared -fPIC -o bin/libvo_se_cut.dylib src/core/*.cpp \
+                    -Iinclude -O3 -Xpreprocessor -fopenmp -undefined dynamic_lookup
+          fi
+
+      # --- 3. 動的検証フェーズ (Deep Smoke Test) ---
+      - name: 🏁 Deep Integration Test
+        shell: bash
+        run: |
+          export QT_QPA_PLATFORM=offscreen
+          # 単なるインポートだけでなく、実際にQtのインスタンス化まで検証
+          printf "%s\n" \
+            "import sys, os, ctypes" \
+            "from PySide6.QtWidgets import QApplication" \
+            "from PySide6.QtCore import QTimer" \
+            "try:" \
+            "    # 1. ライブラリロード検証" \
+            "    lib_path = os.path.join('bin', 'libvo_se_cut.' + ('dll' if sys.platform=='win32' else 'dylib'))" \
+            "    ctypes.CDLL(os.path.abspath(lib_path))" \
+            "    # 2. GUIイベントループ起動検証" \
+            "    app = QApplication(sys.argv)" \
+            "    from main_window import CutStudioMain" \
+            "    window = CutStudioMain()" \
+            "    QTimer.singleShot(100, lambda: (print('Event Loop OK'), app.quit()))" \
+            "    sys.exit(app.exec())" \
+            "except Exception as e:" \
+            "    print(f'CRITICAL FAILURE: {e}')" \
+            "    sys.exit(1)" > deep_test.py
+          python deep_test.py
+
+      # --- 4. パッケージング & 署名 (Distribution Readiness) ---
+      - name: 📦 Final Packaging
+        shell: bash
+        run: |
+          mkdir -p dist_out
+          if [ "${{ matrix.os }}" = "windows-latest" ]; then
+            pyinstaller --noconsole --onefile --clean \
+              --add-data "bin/libvo_se_cut.dll;bin" \
+              --add-data "assets;assets" \
+              --icon "assets/icon.ico" \
+              --name "VO-SE_Cut_Studio_Win" main.py
+            mv dist/VO-SE_Cut_Studio_Win.exe dist_out/
+          else
+            pyinstaller --noconsole --windowed --clean \
+              --add-data "bin/libvo_se_cut.dylib:bin" \
+              --add-data "assets:assets" \
+              --icon "assets/icon.icns" \
+              --name "VO-SE_Cut_Studio_Mac" main.py
+            # macOS特有の署名修復 (Gatekeeper対策)
+            find dist/ -name "*.dylib" -exec codesign --force --deep --sign - {} \;
+            codesign --force --deep --sign - "dist/VO-SE_Cut_Studio_Mac.app"
+            cd dist && zip -ry ../dist_out/VO-SE_Cut_Studio_Mac.zip VO-SE_Cut_Studio_Mac.app && cd ..
+          fi
+
+      - name: Upload Build Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: Release-${{ matrix.os }}
+          path: dist_out/
+
+  release:
+    name: 🌍 Global Distribution
+    needs: check-and-build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    steps:
+      - name: Collect All Binaries
+        uses: actions/download-artifact@v4
+        with:
+          path: final_assets
+          merge-multiple: true
+
+      - name: Create Official Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            final_assets/*.exe
+            final_assets/*.zip
+          body: "VO-SE Cut Studio Official Build. All checks passed."
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
