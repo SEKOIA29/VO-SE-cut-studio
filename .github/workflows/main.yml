@@ -56,6 +56,12 @@ jobs:
           # pyrightconfig.json がない場合でも厳格にチェック
           pyright .
 
+      - name: Debug File Structure
+        shell: bash
+        run: |
+          echo "--- Current Directory Structure ---"
+          find . -maxdepth 3 -name "*.cpp"
+
       - name: 🛠️ Native Core Compilation
         shell: bash
         run: |
