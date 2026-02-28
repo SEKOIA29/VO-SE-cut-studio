@@ -130,11 +130,25 @@ class CutStudioMain(QMainWindow):
 
         self.main_layout.addWidget(self.vertical_splitter)
 
+    def init_ui(self) -> None:
+        # scene はクラス変数として初期化し、型を明示する
+        self.scene: QGraphicsScene = QGraphicsScene()
+        
+        # setSceneにはインスタンスを渡す
+        self.view.setScene(self.scene)
+        
+        # RenderHint は Qt.QPainter.RenderHint を使用する
+        self.view.setRenderHint(QPainter.RenderHint.Antialiasing)
+        
+        # addText の返り値も明示
+        self.placeholder_text = self.scene.addText("プレースホルダー")
+        self.placeholder_text.setDefaultTextColor(Qt.white)
+
     def switch_mode(self, index):
         """
         0: 動画編集モード / 1: モーションモード
         """
-        self.preview_stack.setCurrentIndex(index)
+        self.stacked_widget.setCurrentIndex(index)
         self.btn_edit_mode.setChecked(index == 0)
         self.btn_motion_mode.setChecked(index == 1)
         
