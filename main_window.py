@@ -159,6 +159,8 @@ class CutStudioMain(QMainWindow):
         # アンチエイリアスの有効化（QPainter 経由）
         self.view.setRenderHint(QPainter.RenderHint.Antialiasing)
         
+        self.placeholder_text.setDefaultTextColor(QColor(Qt.GlobalColor.white))
+        
         # プレースホルダーの生成と色の設定
         self.placeholder_text = self.scene.addText("VO-SE Cut Studio 準備完了")
         
