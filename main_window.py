@@ -25,10 +25,14 @@ class TimelineHeader(QWidget):
     """
     タイムライン上部の時間目盛りを表示するウィジェット
     """
+    positionChanged = Signal(int)
+    
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self.setFixedHeight(30)
         self.setStyleSheet("background-color: #333333;")
+        self.playhead_x = 50  # 再生ヘッドの初期位置（ピクセル単位）
+        self.is_dragging = False
 
     def paintEvent(self, event) -> None:
         painter = QPainter(self)
@@ -37,18 +41,35 @@ class TimelineHeader(QWidget):
         # 目盛りの描画
         painter.setPen(QPen(QColor(100, 100, 100), 1))
         painter.setFont(QFont("Consolas", 8))
-        
-        width = self.width()
-        for x in range(0, width, 50):
-            # 1秒ごとの長い線とテキスト
+        for x in range(0, self.width(), 50):
             painter.drawLine(x, 20, x, 30)
-            second = x // 50
-            painter.drawText(x + 5, 15, f"{second:02d}:00")
-            
-            # 中間の短い線
-            for sub_x in range(10, 50, 10):
-                painter.drawLine(x + sub_x, 25, x + sub_x, 30)
+            painter.drawText(x + 5, 15, f"{x // 50:02d}:00")
+
+        # 赤い再生ヘッドの描画
+        painter.setPen(QPen(QColor(255, 60, 60), 2))
+        painter.drawLine(self.playhead_x, 0, self.playhead_x, 30)
+        # 上部の三角形マーカー
+        painter.setBrush(QColor(255, 60, 60))
+        painter.drawPolygon([QPoint(self.playhead_x - 5, 0), QPoint(self.playhead_x + 5, 0), QPoint(self.playhead_x, 8)])
         painter.end()
+
+    def mousePressEvent(self, event) -> None:
+        if event.button() == Qt.MouseButton.LeftButton:
+            self.is_dragging = True
+            self.update_playhead(event.pos().x())
+
+    def mouseMoveEvent(self, event) -> None:
+        if self.is_dragging:
+            self.update_playhead(event.pos().x())
+
+    def mouseReleaseEvent(self, event) -> None:
+        self.is_dragging = False
+
+    def update_playhead(self, x: int) -> None:
+        # 位置を制限して更新
+        self.playhead_x = max(0, min(x, self.width()))
+        self.update()
+        self.positionChanged.emit(self.playhead_x)
 
 
 class TimelineTrack(QFrame):
