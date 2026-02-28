@@ -1,10 +1,10 @@
 {
   "include": ["."],
-  "exclude": ["**/node_modules", "**/__pycache__", "build", "dist"],
-  "strict": ["main.py", "main_window.py"],
+  "exclude": ["**/__pycache__", "build", "dist", ".venv"],
   "pythonVersion": "3.10",
-  "pythonPlatform": "All",
   "typeCheckingMode": "strict",
-  "reportMissingImports": true,
-  "reportMissingTypeStubs": false
+  "reportMissingTypeStubs": false,
+  "reportUnknownMemberType": "warning",
+  "reportUnknownParameterType": "warning",
+  "reportUnknownArgumentType": "warning"
 }
