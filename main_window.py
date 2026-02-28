@@ -10,7 +10,8 @@ from PySide6.QtWidgets import (
     QGraphicsView, 
     QStackedWidget, 
     QPushButton, 
-    QMainWindow
+    QMainWindow,
+    QGraphicsTextItem
 )
 from PySide6.QtCore import Qt, QSize
 from PySide6.QtGui import QColor, QBrush, QPen, QPainter
@@ -153,6 +154,17 @@ class CutStudioMain(QMainWindow):
         
         # RenderHint は Qt.QPainter.RenderHint を使用する
         self.view.setRenderHint(QPainter.RenderHint.Antialiasing)
+        self.view.setScene(self.scene)
+        
+        # アンチエイリアスの有効化（QPainter 経由）
+        self.view.setRenderHint(QPainter.RenderHint.Antialiasing)
+        
+        # プレースホルダーの生成と色の設定
+        self.placeholder_text = self.scene.addText("VO-SE Cut Studio 準備完了")
+        
+        # PySide6 の厳格な型指定に合わせた色の設定
+        if self.placeholder_text:
+            self.placeholder_text.setDefaultTextColor(QColor(Qt.GlobalColor.white))
         
         # addText の返り値も明示
         self.placeholder_text = self.scene.addText("プレースホルダー")
