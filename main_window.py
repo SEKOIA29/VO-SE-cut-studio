@@ -37,6 +37,12 @@ class CutStudioMain(QMainWindow):
         self.setWindowTitle("VO-SE Cut Studio - Early Alpha")
         self.resize(1280, 720)
 
+        self.scene: QGraphicsScene = QGraphicsScene()
+        self.view: QGraphicsView = QGraphicsView()
+        self.stacked_widget: QStackedWidget = QStackedWidget()
+        self.placeholder_text: QGraphicsTextItem | None = None
+
+
         # メインウィジェット
         self.central_widget = QWidget()
         self.setCentralWidget(self.central_widget)
@@ -150,7 +156,7 @@ class CutStudioMain(QMainWindow):
         
         # addText の返り値も明示
         self.placeholder_text = self.scene.addText("プレースホルダー")
-        self.placeholder_text.setDefaultTextColor(Qt.white)
+        self.placeholder_text.setDefaultTextColor(QColor(Qt.GlobalColor.white))
 
     def switch_mode(self, index):
         """
