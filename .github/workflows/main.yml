@@ -105,22 +105,23 @@ jobs:
             "    sys.exit(1)" > deep_test.py
           python deep_test.py
 
-      - name: 📦 Final Packaging (PyInstaller)
+      # --- 4. パッケージング (PyInstaller) ---
+      - name: 📦 Final Packaging
         shell: bash
         run: |
           mkdir -p dist_out
+          # main.py ではなく main_window.py を指定します
           if [ "${{ matrix.os }}" = "windows-latest" ]; then
             pyinstaller --noconsole --onefile --clean \
               --add-data "bin/libvo_se_cut.dll;bin" \
-              --add-data "assets;assets" \
-              --name "VO-SE_Cut_Studio_Win" main.py
+              --name "VO-SE_Cut_Studio_Win" main_window.py
             mv dist/VO-SE_Cut_Studio_Win.exe dist_out/
           else
             pyinstaller --noconsole --windowed --clean \
               --add-data "bin/libvo_se_cut.dylib:bin" \
-              --add-data "assets:assets" \
-              --name "VO-SE_Cut_Studio_Mac" main.py
-            find dist/ -name "*.dylib" -exec codesign --force --deep --sign - {} \;
+              --name "VO-SE_Cut_Studio_Mac" main_window.py
+            
+            # Mac用の署名とアーカイブ処理
             codesign --force --deep --sign - "dist/VO-SE_Cut_Studio_Mac.app"
             cd dist && zip -ry ../dist_out/VO-SE_Cut_Studio_Mac.zip VO-SE_Cut_Studio_Mac.app && cd ..
           fi
