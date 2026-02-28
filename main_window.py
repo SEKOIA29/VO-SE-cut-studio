@@ -4,8 +4,16 @@ from PySide6.QtWidgets import (
     QSplitter, QTextEdit, QPushButton, QLabel, QListWidget, 
     QFrame, QStackedWidget, QGraphicsView, QGraphicsScene
 )
+from PySide6.QtWidgets import (
+    QApplication, 
+    QGraphicsScene, 
+    QGraphicsView, 
+    QStackedWidget, 
+    QPushButton, 
+    QMainWindow
+)
 from PySide6.QtCore import Qt, QSize
-from PySide6.QtGui import QColor, QBrush, QPen
+from PySide6.QtGui import QColor, QBrush, QPen, QPainter
 
 class PreviewView(QGraphicsView):
     """
