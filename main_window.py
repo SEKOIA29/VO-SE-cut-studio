@@ -39,6 +39,7 @@ class TimelineHeader(QWidget):
         self.is_dragging = False
 
     def paintEvent(self, event) -> None:
+        super().paintEvent(event)
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
         
