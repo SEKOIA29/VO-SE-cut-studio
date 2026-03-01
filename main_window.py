@@ -38,7 +38,7 @@ class TimelineHeader(QWidget):
         self.playhead_x = 50  # 再生ヘッドの初期位置（ピクセル単位）
         self.is_dragging = False
 
-    def paintEvent(self, event) -> None:
+    def paintEvent(self, event: QPaintEvent) -> None:
         super().paintEvent(event)
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
@@ -95,7 +95,7 @@ class TimelineTrack(QFrame):
         self.setStyleSheet("background-color: #2a2a2a; border: 1px solid #3f3f3f;")
         self.track_name = name
 
-    def paintEvent(self, event) -> None:
+    def paintEvent(self, event: QPaintEvent) -> None:
         super().paintEvent(event)
         painter = QPainter(self)
         painter.setPen(QColor(180, 180, 180))
@@ -137,7 +137,7 @@ class TimelineWidget(QWidget):
         self.tracks_layout.addStretch()
 
         # スクロールバー
-        self.h_scrollbar = QScrollBar(Qt.Orientation.Horizontal)
+        self.h_scrollbar: QScrollBar = QScrollBar(Qt.Orientation.Horizontal)
 
         # 2. main_layout を使用してウィジェットを登録
         self.main_layout.addWidget(self.header)
