@@ -115,20 +115,21 @@ class TimelineWidget(QWidget):
         self.init_ui()
 
     def init_ui(self) -> None:
-        self.layout = QVBoxLayout(self)
-        self.layout.setContentsMargins(0, 0, 0, 0)
-        self.layout.setSpacing(0)
+        # 1. 属性名を main_layout に変更してメソッドとの衝突を回避
+        self.main_layout: QVBoxLayout = QVBoxLayout(self)
+        self.main_layout.setContentsMargins(0, 0, 0, 0)
+        self.main_layout.setSpacing(0)
 
         # 時間目盛り
         self.header = TimelineHeader()
         
         # トラックエリア
         self.scroll_content = QWidget()
-        self.tracks_layout = QVBoxLayout(self.scroll_content)
+        self.tracks_layout: QVBoxLayout = QVBoxLayout(self.scroll_content)
         self.tracks_layout.setContentsMargins(0, 0, 0, 0)
         self.tracks_layout.setSpacing(1)
 
-        # 代表、主要な3トラックを配置しました
+        # 主要トラックの追加
         self.tracks_layout.addWidget(TimelineTrack("🎙️ VOICE"))
         self.tracks_layout.addWidget(TimelineTrack("🎬 VIDEO"))
         self.tracks_layout.addWidget(TimelineTrack("🦴 MOTION"))
@@ -137,10 +138,13 @@ class TimelineWidget(QWidget):
         # スクロールバー
         self.h_scrollbar = QScrollBar(Qt.Orientation.Horizontal)
 
-        self.layout.addWidget(self.header)
-        self.layout.addWidget(self.scroll_content)
-        self.layout.addWidget(self.h_scrollbar)
+        # 2. main_layout を使用してウィジェットを登録
+        self.main_layout.addWidget(self.header)
+        self.main_layout.addWidget(self.scroll_content)
+        self.main_layout.addWidget(self.h_scrollbar)
 
+    def paintEvent(self, event: QPaintEvent) -> None:
+        super().paintEvent(event)
 
 class PreviewView(QGraphicsView):
     def __init__(self) -> None:
