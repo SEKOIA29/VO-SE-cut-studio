@@ -17,7 +17,7 @@ from PySide6.QtWidgets import (
     QGraphicsTextItem,
     QScrollBar,
 )
-from PySide6.QtCore import Qt, QRect
+from PySide6.QtCore import Qt, QRect, Signal, QPoint
 from PySide6.QtGui import QColor, QBrush, QPainter, QPen, QFont
 
 
