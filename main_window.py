@@ -17,9 +17,13 @@ from PySide6.QtWidgets import (
     QGraphicsTextItem,
     QScrollBar,
 )
-from PySide6.QtCore import Qt, QRect, Signal, QPoint
-from PySide6.QtGui import QColor, QBrush, QPainter, QPen, QFont
-
+from PySide6.QtCore import Qt, QRect, QPoint, Signal, QEvent
+from PySide6.QtGui import (
+    QColor, QBrush, QPainter, QPen, QFont, QPolygon, QPaintEvent, QMouseEvent
+)
+from PySide6.QtWidgets import (
+    QWidget, QVBoxLayout, QFrame, QScrollBar
+)
 
 class TimelineHeader(QWidget):
     """
@@ -60,16 +64,16 @@ class TimelineHeader(QWidget):
         painter.drawPolygon(triangle)
         painter.end()
 
-    def mousePressEvent(self, event) -> None:
+    def mousePressEvent(self, event: QMouseEvent) -> None:
         if event.button() == Qt.MouseButton.LeftButton:
             self.is_dragging = True
-            self.update_playhead(event.pos().x())
+            self.update_playhead(int(event.pos().x()))
 
-    def mouseMoveEvent(self, event) -> None:
+    def mouseMoveEvent(self, event: QMouseEvent) -> None:
         if self.is_dragging:
-            self.update_playhead(event.pos().x())
+            self.update_playhead(int(event.pos().x()))
 
-    def mouseReleaseEvent(self, event) -> None:
+    def mouseReleaseEvent(self, event: QMouseEvent) -> None:
         self.is_dragging = False
 
     def update_playhead(self, x: int) -> None:
@@ -107,6 +111,7 @@ class TimelineWidget(QWidget):
     """
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
+        self.main_layout: QVBoxLayout = QVBoxLayout(self)
         self.init_ui()
 
     def init_ui(self) -> None:
