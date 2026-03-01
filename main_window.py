@@ -49,8 +49,15 @@ class TimelineHeader(QWidget):
         painter.setPen(QPen(QColor(255, 60, 60), 2))
         painter.drawLine(self.playhead_x, 0, self.playhead_x, 30)
         # 上部の三角形マーカー
+        # 三角形マーカーの描画（可読性とRuff制限を考慮した分割）
+        triangle = [
+            QPoint(self.playhead_x - 5, 0),
+            QPoint(self.playhead_x + 5, 0),
+            QPoint(self.playhead_x, 8)
+        ]
+        
         painter.setBrush(QColor(255, 60, 60))
-        painter.drawPolygon([QPoint(self.playhead_x - 5, 0), QPoint(self.playhead_x + 5, 0), QPoint(self.playhead_x, 8)])
+        painter.drawPolygon(triangle)
         painter.end()
 
     def mousePressEvent(self, event) -> None:
