@@ -10,7 +10,7 @@ def pack_all_voices() -> None:
     base_dir = os.path.abspath(
         os.path.join(os.path.dirname(__file__), "../../")
     )
-    output_path = os.path.join(base_dir, "src/core/voice_data.h")
+    output_path = os.path.join(base_dir, "src", "core", "voice_data.h")
     # CI環境とローカルの両方に対応するため、相対パスを調整
     search_path = os.path.join(base_dir, "assets/official_voices/**/*.wav")
 
