@@ -9,6 +9,7 @@ def pack_all_voices():
     base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../"))
     output_path = os.path.join(base_dir, "src/voice_data.h")
     search_path = os.path.join(base_dir, "assets/official_voices/**/*.wav")
+    voice_entries: List[Tuple[str, str]] = []
 
     # 出力先フォルダ(src)がなければ作成
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
@@ -51,8 +52,9 @@ def pack_all_voices():
                 entry_name = file_base
 
             # 変数名の作成 (16進数化で安全な識別子に)
-            safe_id = "".join(f"{ord(c):04x}" for c in entry_name)
-            var_name = f"OFFICIAL_VOICE_{safe_id}"
+            entry_name: str = f"{folder_name}_{file_base}" if folder_name != "official_voices" else file_base
+            safe_id: str = "".join(f"{ord(c):04x}" for c in entry_name)
+            var_name: str = f"OFFICIAL_VOICE_{safe_id}"
 
             try:
                 with wave.open(wav_path, 'rb') as f:
