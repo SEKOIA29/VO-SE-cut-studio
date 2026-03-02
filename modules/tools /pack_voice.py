@@ -3,6 +3,7 @@ import numpy as np
 import glob
 import os
 
+
 def pack_all_voices():
     output_path = "src/voice_data.h"
     # サブフォルダまで全スキャンする設定 (**/*.wav)
