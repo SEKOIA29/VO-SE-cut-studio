@@ -2,14 +2,16 @@ import wave
 import numpy as np
 import glob
 import os
+from typing import List, Tuple  # これが F821 回避の鍵です
 
 
-def pack_all_voices():
+def pack_all_voices() -> None:
     # 1. パスの決定
-    base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../"))
+    base_dir = os.path.abspath(
+        os.path.join(os.path.dirname(__file__), "../../")
+    )
     output_path = os.path.join(base_dir, "src/voice_data.h")
     search_path = os.path.join(base_dir, "assets/official_voices/**/*.wav")
-    voice_entries: List[Tuple[str, str]] = []
 
     # 出力先フォルダ(src)がなければ作成
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
@@ -24,6 +26,9 @@ def pack_all_voices():
         print("Warning: No wav files found. Check your assets path!")
         return
 
+    # 型を明示的に宣言して Pyright を通す
+    voice_entries: List[Tuple[str, str]] = []
+
     with open(output_path, 'w', encoding='utf-8') as h:
         # ヘッダーガード
         h.write("#pragma once\n#include <stdint.h>\n\n")
@@ -37,22 +42,19 @@ def pack_all_voices():
             'int sample_count);\n\n'
         )
 
-        voice_entries = []
-
         for wav_path in wav_files:
             # パス分解ロジック
             parts = os.path.normpath(wav_path).split(os.sep)
             folder_name = parts[-2] if len(parts) > 2 else ""
             file_base = os.path.splitext(parts[-1])[0]
 
-            # 登録名の決定
+            # E501 回避のため、三項演算子を使わず if-else で書く
             if folder_name != "official_voices":
-                entry_name = f"{folder_name}_{file_base}"
+                entry_name: str = f"{folder_name}_{file_base}"
             else:
-                entry_name = file_base
+                entry_name: str = file_base
 
             # 変数名の作成 (16進数化で安全な識別子に)
-            entry_name: str = f"{folder_name}_{file_base}" if folder_name != "official_voices" else file_base
             safe_id: str = "".join(f"{ord(c):04x}" for c in entry_name)
             var_name: str = f"OFFICIAL_VOICE_{safe_id}"
 
@@ -70,20 +72,21 @@ def pack_all_voices():
                         if (i + 1) % 15 == 0:
                             h.write("\n    ")
 
-                    # C++配列を閉じる (}; の形に修正)
+                    # C++配列を閉じる
                     h.write("\n};\n")
                     h.write(f"const int {var_name}_LEN = {len(data)};\n\n")
-                    voice_entries.append((entry_name, var_name))
 
+                    voice_entries.append((entry_name, var_name))
             except Exception as e:
                 print(f"Error skipping {wav_path}: {e}")
 
         # 登録関数を一括生成
         h.write("inline void register_all_embedded_voices() {\n")
-        for entry_name, var_name in voice_entries:
+        for ent_name, v_name in voice_entries:
+            # 1行が長くならないように f-string を工夫
             h.write(
-                f'    load_embedded_resource("{entry_name}", '
-                f'{var_name}, {var_name}_LEN);\n'
+                f'    load_embedded_resource("{ent_name}", '
+                f'{v_name}, {v_name}_LEN);\n'
             )
         h.write("}\n")
 
