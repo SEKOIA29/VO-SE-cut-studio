@@ -73,8 +73,8 @@ def pack_all_voices():
                     # C++配列を閉じる (}; の形に修正)
                     h.write("\n};\n")
                     h.write(f"const int {var_name}_LEN = {len(data)};\n\n")
-
                     voice_entries.append((entry_name, var_name))
+
             except Exception as e:
                 print(f"Error skipping {wav_path}: {e}")
 
