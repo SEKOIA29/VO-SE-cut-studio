@@ -73,13 +73,17 @@ jobs:
         shell: bash
         run: |
           mkdir -p bin
+          # 全てのサブディレクトリにある .cpp を探してコンパイル対象にする
+          # find コマンドで src/core 以下の全 cpp をリストアップします
+          CPP_FILES=$(find src/core -name "*.cpp")
+          
           if [ "${{ matrix.os }}" = "windows-latest" ]; then
-            # Windows最適化: -Isrc/core を追加して生成されたヘッダーを認識させる
-            g++ -std=c++17 -shared -fPIC -o bin/libvo_se_cut.dll src/core/*.cpp \
+            g++ -std=c++17 -shared -fPIC -o bin/libvo_se_cut.dll $CPP_FILES \
                 -Isrc/core -Iinclude -O3 -mavx2 -static -static-libgcc -static-libstdc++
           else
-            # Mac最適化: -Isrc/core を追加
-            clang++ -std=c++17 -shared -fPIC -o bin/libvo_se_cut.dylib src/core/*.cpp \
+            # Mac用: WORLDの内部構造を探せるよう -I でインクルードパスも追加
+            # WORLDのヘッダがある場所（例: src/core/world）を適宜追加してください
+            clang++ -std=c++17 -shared -fPIC -o bin/libvo_se_cut.dylib $CPP_FILES \
                     -Isrc/core -Iinclude -O3 -undefined dynamic_lookup -w
           fi
 
