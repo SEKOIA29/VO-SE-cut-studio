@@ -7,7 +7,9 @@
 #include <cstdint>
 #include <mutex>
 #include "vose_core.h"
-#include "voice_data.h"
+#pragma once
+#include <stdint.h>
+inline void register_all_embedded_voices() {}
 
 // WORLDライブラリ
 #include "world/synthesis.h"
