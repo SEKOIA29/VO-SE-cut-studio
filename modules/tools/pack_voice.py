@@ -2,18 +2,19 @@ import wave
 import numpy as np
 import glob
 import os
-from typing import List, Tuple  # これが F821 回避の鍵です
+from typing import List, Tuple
 
 
 def pack_all_voices() -> None:
-    # 1. パスの決定
+    # 1. パスの決定（ここを src/core/ に修正しました）
     base_dir = os.path.abspath(
         os.path.join(os.path.dirname(__file__), "../../")
     )
-    output_path = os.path.join(base_dir, "src/voice_data.h")
+    # vose_core.cpp と同じディレクトリに出力するように変更
+    output_path = os.path.join(base_dir, "src/core/voice_data.h")
     search_path = os.path.join(base_dir, "assets/official_voices/**/*.wav")
 
-    # 出力先フォルダ(src)がなければ作成
+    # 出力先フォルダがなければ作成
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
     # 2. WAVファイルのリストアップ
@@ -48,7 +49,7 @@ def pack_all_voices() -> None:
             folder_name = parts[-2] if len(parts) > 2 else ""
             file_base = os.path.splitext(parts[-1])[0]
 
-            # E501 回避のため、三項演算子を使わず if-else で書く
+            # E501 回避のため、if-else で書く
             if folder_name != "official_voices":
                 entry_name: str = f"{folder_name}_{file_base}"
             else:
@@ -83,14 +84,13 @@ def pack_all_voices() -> None:
         # 登録関数を一括生成
         h.write("inline void register_all_embedded_voices() {\n")
         for ent_name, v_name in voice_entries:
-            # 1行が長くならないように f-string を工夫
-            h.write(
-                f'    load_embedded_resource("{ent_name}", '
-                f'{v_name}, {v_name}_LEN);\n'
-            )
+            # 引数が長い場合は分割して書き出す
+            h.write('    load_embedded_resource(\n')
+            h.write(f'        "{ent_name}", {v_name}, {v_name}_LEN\n')
+            h.write('    );\n')
         h.write("}\n")
 
-    print(f"Success: Packed {len(voice_entries)} voices.")
+    print(f"Success: Packed {len(voice_entries)} voices into {output_path}")
 
 
 if __name__ == "__main__":
