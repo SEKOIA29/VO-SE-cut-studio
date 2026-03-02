@@ -74,13 +74,13 @@ jobs:
         run: |
           mkdir -p bin
           if [ "${{ matrix.os }}" = "windows-latest" ]; then
-            # Windows最適化: AVX2, 静的リンクによるポータビリティ確保
+            # Windows最適化: -Isrc/core を追加して生成されたヘッダーを認識させる
             g++ -std=c++17 -shared -fPIC -o bin/libvo_se_cut.dll src/core/*.cpp \
-                -Iinclude -O3 -mavx2 -static -static-libgcc -static-libstdc++
+                -Isrc/core -Iinclude -O3 -mavx2 -static -static-libgcc -static-libstdc++
           else
-            # Mac最適化: ネイティブビルド
+            # Mac最適化: -Isrc/core を追加
             clang++ -std=c++17 -shared -fPIC -o bin/libvo_se_cut.dylib src/core/*.cpp \
-                    -Iinclude -O3 -undefined dynamic_lookup -w
+                    -Isrc/core -Iinclude -O3 -undefined dynamic_lookup -w
           fi
 
       - name: 🏁 Deep Integration Test (Headless)
