@@ -56,6 +56,12 @@ jobs:
           # pyrightconfig.json がない場合でも厳格にチェック
           pyright .
 
+      - name: 🎙️ Pack Voice Assets (Generate voice_data.h)
+        shell: bash
+        run: |
+          # スクリプトを実行して src/core/voice_data.h を生成
+          python modules/tools/pack_voice.py
+
       - name: Debug File Structure
         shell: bash
         run: |
