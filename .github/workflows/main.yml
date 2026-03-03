@@ -73,30 +73,28 @@ jobs:
         shell: bash
         run: |
           mkdir -p bin
-          # 1. カッコを \( \) で囲み、。cpp と .c の両方を「全階層」から強制的に拾います
-          # ※この書き方をしないと、サブフォルダ内の .c が無視されるケースがあります
-          SOURCES=$(find src/core -type f \( -name "*.cpp" -o -name "*.c" \))
+          # 1. カッコの前後をスペースで空け、src/core 内の全階層から .cpp と .c を強制取得
+          # ※ . でカレントディレクトリを明示し、確実に再帰探索させます
+          SOURCES=$(find ./src/core -type f \( -name "*.cpp" -o -name "*.c" \))
           
-          # 2. 全てのディレクトリをインクルードパスに加える（これも重要です）
-          INCLUDES=$(find src/core -type d | sed 's/^/-I/')
+          # 2. 全てのディレクトリをインクルードパスに追加
+          INCLUDES=$(find ./src/core -type d | sed 's|^|-I|')
 
           echo "--- 🔍 Debug: Compiled Source List ---"
           echo "$SOURCES"
           
-          # 万が一ファイルが見つからなかったらエラーにする（サイレント失敗を防ぐ）
           if [ -z "$SOURCES" ]; then
-            echo "ERROR: No source files found in src/core!"
+            echo "ERROR: No source files found! Path check: ls -R src/core"
+            ls -R src/core
             exit 1
           fi
 
           if [ "${{ matrix.os }}" = "windows-latest" ]; then
-            g++ -std=c++17 -shared -fPIC -o bin/libvo_se_cut.dll $SOURCES \
-                $INCLUDES -Iinclude -O3 -mavx2 -static -static-libgcc -static-libstdc++
+            g++ -std=c++17 -shared -fPIC -o bin/libvo_se_cut.dll $SOURCES $INCLUDES -Iinclude -O3 -mavx2 -static -static-libgcc -static-libstdc++
           else
-            # Mac用: $SOURCES に cheaptrick.c が入っていれば、これで解決します
-            clang++ -std=c++17 -shared -fPIC -o bin/libvo_se_cut.dylib $SOURCES \
-                    $INCLUDES -Iinclude -O3 -undefined dynamic_lookup -w
-                    -Wl,-all_load
+            # Mac用: 改行による command not found を防ぐため、全オプションを1つのコマンドラインに連結
+            # -Wl,-all_load を付与して、全オブジェクトのシンボル（CheapTrick等）を強制結合します
+            clang++ -std=c++17 -shared -fPIC -o bin/libvo_se_cut.dylib $SOURCES $INCLUDES -Iinclude -O3 -undefined dynamic_lookup -Wl,-all_load -w
           fi
 
       - name: 🏁 Deep Integration Test (Headless)
