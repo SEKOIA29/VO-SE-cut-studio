@@ -73,27 +73,27 @@ jobs:
         shell: bash
         run: |
           mkdir -p bin
-          # 1. カッコの前後をスペースで空け、src/core 内の全階層から .cpp と .c を強制取得
-          # ※ . でカレントディレクトリを明示し、確実に再帰探索させます
-          SOURCES=$(find ./src/core -type f \( -name "*.cpp" -o -name "*.c" \))
           
-          # 2. 全てのディレクトリをインクルードパスに追加
-          INCLUDES=$(find ./src/core -type d | sed 's|^|-I|')
+          # 1. 確実に src/core 以下の全 .cpp と .c を一列に並べる（評価を確実に！）
+          # カッコ \( \) の前後にスペースを入れ、パスを固定することでミスを防ぎます
+          SOURCES=$(find src/core -type f \( -name "*.cpp" -o -name "*.c" \) | tr '\n' ' ')
+          
+          # 2. 全ディレクトリをインクルードパスとして展開
+          INCLUDES=$(find src/core -type d | sed 's|^|-I|' | tr '\n' ' ')
 
-          echo "--- 🔍 Debug: Compiled Source List ---"
-          echo "$SOURCES"
-          
+          echo "--- 🔍 Debug Check ---"
+          echo "Target Sources: $SOURCES"
+
           if [ -z "$SOURCES" ]; then
-            echo "ERROR: No source files found! Path check: ls -R src/core"
-            ls -R src/core
+            echo "CRITICAL ERROR: No source files found!"
             exit 1
           fi
 
           if [ "${{ matrix.os }}" = "windows-latest" ]; then
             g++ -std=c++17 -shared -fPIC -o bin/libvo_se_cut.dll $SOURCES $INCLUDES -Iinclude -O3 -mavx2 -static -static-libgcc -static-libstdc++
           else
-            # Mac用: 改行による command not found を防ぐため、全オプションを1つのコマンドラインに連結
-            # -Wl,-all_load を付与して、全オブジェクトのシンボル（CheapTrick等）を強制結合します
+            # Mac用：変な改行を入れず、必要なフラグをすべて1行に叩き込みます
+            # -Wl,-all_load は 'L' の小文字。全シンボルを強制的にライブラリへ焼き付けます。
             clang++ -std=c++17 -shared -fPIC -o bin/libvo_se_cut.dylib $SOURCES $INCLUDES -Iinclude -O3 -undefined dynamic_lookup -Wl,-all_load -w
           fi
 
