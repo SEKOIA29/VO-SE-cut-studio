@@ -136,6 +136,7 @@ jobs:
         shell: bash
         run: |
           export QT_QPA_PLATFORM=offscreen
+          export PYTHONPATH="${PYTHONPATH}:$(pwd):$(pwd)/modules/gui"  # ← 追加
           printf "%s\n" \
             "import sys, os, ctypes" \
             "from PySide6.QtWidgets import QApplication" \
@@ -166,18 +167,15 @@ jobs:
         shell: bash
         run: |
           mkdir -p dist_out
-          # main.py ではなく main_window.py を指定します
           if [ "${{ matrix.os }}" = "windows-latest" ]; then
             pyinstaller --noconsole --onefile --clean \
               --add-data "bin/libvo_se_cut.dll;bin" \
-              --name "VO-SE_Cut_Studio_Win" main_window.py
+              --name "VO-SE_Cut_Studio_Win" modules/gui/main_window.py  # ← パス修正
             mv dist/VO-SE_Cut_Studio_Win.exe dist_out/
           else
             pyinstaller --noconsole --windowed --clean \
               --add-data "bin/libvo_se_cut.dylib:bin" \
-              --name "VO-SE_Cut_Studio_Mac" main_window.py
-            
-            # Mac用の署名とアーカイブ処理
+              --name "VO-SE_Cut_Studio_Mac" modules/gui/main_window.py  # ← パス修正
             codesign --force --deep --sign - "dist/VO-SE_Cut_Studio_Mac.app"
             cd dist && zip -ry ../dist_out/VO-SE_Cut_Studio_Mac.zip VO-SE_Cut_Studio_Mac.app && cd ..
           fi
