@@ -7,16 +7,23 @@
 #include <cstdint>
 #include <mutex>
 #include "vose_core.h"
-#pragma once
-#include <stdint.h>
-inline void register_all_embedded_voices() {}
+#include "voice_data.h" // register_all_embedded_voices 用
 
-// WORLDライブラリ
-#include "world/synthesis.h"
-#include "world/cheaptrick.h"
-#include "world/d4c.h"
-#include "world/audioio.h"
-#include "world/constantnumbers.h"
+// --- 修正ポイント：WORLDライブラリを Cリンケージで囲む ---
+extern "C" {
+    #include "world/synthesis.h"
+    #include "world/cheaptrick.h"
+    #include "world/d4c.h"
+    #include "world/stonemask.h"  // 必要に応じて追加
+    #include "world/dio.h"        // 必要に応じて追加
+}
+
+// ※ audioio.h や constantnumbers.h が純粋なCであれば上記に含め、
+// C++の機能を使っている場合は外に出しますが、基本は extern "C" 内で安全です。
+extern "C" {
+    #include "world/audioio.h"
+    #include "world/constantnumbers.h"
+}
 
 // ============================================================
 // データ構造
