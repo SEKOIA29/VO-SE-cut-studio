@@ -74,10 +74,10 @@ jobs:
         run: |
           mkdir -p bin
           # Proの時と違い、階層が深くなったので find コマンドで全ファイルを拾います
-          # CheapTrick の実体が .c ファイルであっても拾えるように "*.c*" とします
-          SOURCES=$(find src/core -name "*.c*")
+          # .cpp だけでなく、WORLDエンジンで使われる .c も対象に加えます
+          SOURCES=$(find src/core -name "*.cpp" -o -name "*.c")
           
-          # インクルードパスも再帰的に追加しないと、深い階層のヘッダーが見つかりません
+          # インクルードパスも core 以下の全サブフォルダを自動で追加します
           INCLUDES=$(find src/core -type d | sed 's/^/-I/')
 
           echo "Found source files: $SOURCES"
@@ -86,7 +86,7 @@ jobs:
             g++ -std=c++17 -shared -fPIC -o bin/libvo_se_cut.dll $SOURCES \
                 $INCLUDES -Iinclude -O3 -mavx2 -static -static-libgcc -static-libstdc++
           else
-            # Mac用: $SOURCES を直接渡すことで、サブフォルダ内の CheapTrick も確実にリンクされます
+            # Mac用: $SOURCES を使うことで、別フォルダの CheapTrick も確実に結合します
             clang++ -std=c++17 -shared -fPIC -o bin/libvo_se_cut.dylib $SOURCES \
                     $INCLUDES -Iinclude -O3 -undefined dynamic_lookup -w
           fi
