@@ -72,38 +72,48 @@ jobs:
       - name: 🛠️ Native Core Compilation
         shell: bash
         run: |
-          mkdir -p bin
+          mkdir -p bin obj
           
-          # 1. 確実に全ファイルを個別にリストアップして結合
-          # 複雑な1行コマンドをやめ、変数を追記していく方式で「漏れ」を物理的に防ぎます
-          SRCS_CPP=$(find src -name "*.cpp")
-          SRCS_C=$(find src -name "*.c")
-          SOURCES="$SRCS_CPP $SRCS_C"
+          # 1. ソースとインクルードパスの取得
+          mapfile -t SOURCES < <(find src \( -name "*.cpp" -o -name "*.c" \))
+          mapfile -t INCLUDES < <(find src -type d | sed 's/^/-I/')
           
-          # 2. インクルードパスも同様に、src 以下の全ディレクトリを対象にします
-          INCLUDES=$(find src -type d | sed 's|^|-I|' | xargs)
-
           echo "--- 🔍 Debug Check ---"
-          echo "Target Sources: $SOURCES"
+          echo "Found ${#SOURCES[@]} source files."
           
-          # ファイル数チェック：もし1つなら、WORLDエンジンがリポジトリに無い証拠です
-          COUNT=$(echo $SOURCES | wc -w)
-          echo "Found $COUNT source files."
-
-          if [ "$COUNT" -le 1 ]; then
-            echo "CRITICAL ERROR: Engine files (CheapTrick etc.) are NOT in 'src' folder!"
-            echo "Current Directory Structure:"
-            ls -R
-            exit 1
+          if [ "${#SOURCES[@]}" -le 1 ]; then
+            echo "CRITICAL ERROR: Engine files not found in src/"
+            ls -R src; exit 1
           fi
 
+          # OSごとのコンパイラとフラグの設定
           if [ "${{ matrix.os }}" = "windows-latest" ]; then
-            # Windows(MinGW): ソースが並べば undefined reference は物理的に消滅します
-            g++ -std=c++17 -shared -fPIC -o bin/libvo_se_cut.dll $SOURCES $INCLUDES -Iinclude -O3 -mavx2 -static -static-libgcc -static-libstdc++
+            CXX="g++"
+            LDFLAGS="-shared -O3 -mavx2 -static -static-libgcc -static-libstdc++"
+            LIB_OUT="bin/libvo_se_cut.dll"
           else
-            # Mac用: 改行やスペースの混入を防ぎ、全シンボルを強制保持
-            clang++ -std=c++17 -shared -fPIC -o bin/libvo_se_cut.dylib $SOURCES $INCLUDES -Iinclude -O3 -undefined dynamic_lookup -Wl,-all_load -w
+            CXX="clang++"
+            LDFLAGS="-dynamiclib -undefined dynamic_lookup -w"
+            LIB_OUT="bin/libvo_se_cut.dylib"
           fi
+
+          # 2. 各ファイルを個別にコンパイル（DIRをインクルードパスに含める）
+          OBJS=()
+          for SRC in "${SOURCES[@]}"; do
+            # スラッシュをアンダースコアに置換してユニークなオブジェクト名を作成
+            OBJ="obj/$(echo "$SRC" | tr '/' '_').o"
+            DIR=$(dirname "$SRC")
+            
+            echo "Compiling: $SRC"
+            $CXX -std=c++17 -fPIC -c "$SRC" \
+                 -I"$DIR" "${INCLUDES[@]}" -Iinclude \
+                 -O3 -w -o "$OBJ"
+            OBJS+=("$OBJ")
+          done
+
+          # 3. リンク工程
+          echo "Linking: $LIB_OUT"
+          $CXX -std=c++17 $LDFLAGS -o "$LIB_OUT" "${OBJS[@]}"
           
       - name: 🏁 Deep Integration Test (Headless)
         shell: bash
