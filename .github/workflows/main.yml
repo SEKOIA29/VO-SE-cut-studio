@@ -73,17 +73,17 @@ jobs:
         shell: bash
         run: |
           mkdir -p bin
-          # 全てのサブディレクトリにある .cpp を探してコンパイル対象にする
-          # find コマンドで src/core 以下の全 cpp をリストアップします
-          CPP_FILES=$(find src/core -name "*.cpp")
-          
+          # src/core 以下のすべてのサブディレクトリから .cpp ファイルを再帰的に見つける
+          SOURCES=$(find src/core -name "*.cpp")
+          echo "Compiling: $SOURCES"
+
           if [ "${{ matrix.os }}" = "windows-latest" ]; then
-            g++ -std=c++17 -shared -fPIC -o bin/libvo_se_cut.dll $CPP_FILES \
+            # Windows: すべてのソースをリンクし、インクルードパスも再帰的に指定
+            g++ -std=c++17 -shared -fPIC -o bin/libvo_se_cut.dll $SOURCES \
                 -Isrc/core -Iinclude -O3 -mavx2 -static -static-libgcc -static-libstdc++
           else
-            # Mac用: WORLDの内部構造を探せるよう -I でインクルードパスも追加
-            # WORLDのヘッダがある場所（例: src/core/world）を適宜追加してください
-            clang++ -std=c++17 -shared -fPIC -o bin/libvo_se_cut.dylib $CPP_FILES \
+            # Mac: $SOURCES を展開してコンパイル。インクルードパスも忘れずに。
+            clang++ -std=c++17 -shared -fPIC -o bin/libvo_se_cut.dylib $SOURCES \
                     -Isrc/core -Iinclude -O3 -undefined dynamic_lookup -w
           fi
 
