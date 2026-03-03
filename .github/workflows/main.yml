@@ -68,30 +68,25 @@ jobs:
         run: |
           echo "--- Current Directory Structure ---"
           find . -maxdepth 3 -name "*.cpp"
-
+          
       - name: 🛠️ Native Core Compilation
         shell: bash
         run: |
           mkdir -p bin
-          # 1. src/core 以下の全 .cpp と .c を再帰的に収集 (WORLD対策)
+          # .cpp と .c の両方を再帰的に収集
           SOURCES=$(find src/core -name "*.cpp" -o -name "*.c")
+          # 各サブフォルダをインクルードパスに自動追加
+          INCLUDES=$(find src/core -type d | sed 's/^/-I/')
           
-          # 2. サブディレクトリ（worldなど）の中にあるヘッダーも自動で見つけられるようパスを生成
-          INCLUDE_PATHS=$(find src/core -type d | sed 's/^/-I/')
-          
-          echo "--- Targets ---"
-          echo "$SOURCES"
-          echo "--- Includes ---"
-          echo "$INCLUDE_PATHS"
+          echo "Found sources: $SOURCES"
 
           if [ "${{ matrix.os }}" = "windows-latest" ]; then
-            # Windows最適化
             g++ -std=c++17 -shared -fPIC -o bin/libvo_se_cut.dll $SOURCES \
-                $INCLUDE_PATHS -Iinclude -O3 -mavx2 -static -static-libgcc -static-libstdc++
+                $INCLUDES -Iinclude -O3 -mavx2 -static -static-libgcc -static-libstdc++
           else
-            # Mac最適化
+            # Mac用: シンボルを強制的に公開し、C/C++混在を許容する
             clang++ -std=c++17 -shared -fPIC -o bin/libvo_se_cut.dylib $SOURCES \
-                    $INCLUDE_PATHS -Iinclude -O3 -undefined dynamic_lookup -w
+                    $INCLUDES -Iinclude -O3 -undefined dynamic_lookup -w
           fi
 
       - name: 🏁 Deep Integration Test (Headless)
