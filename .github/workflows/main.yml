@@ -73,20 +73,21 @@ jobs:
         shell: bash
         run: |
           mkdir -p bin
-          # Proの時と違い、階層が深くなったので find コマンドで全ファイルを拾います
-          # .cpp だけでなく、WORLDエンジンで使われる .c も対象に加えます
-          SOURCES=$(find src/core -name "*.cpp" -o -name "*.c")
+          # 修正ポイント1: カッコで囲むことで .cpp と .c の両方を確実に全階層から拾います
+          # ※バックスラッシュでカッコをエスケープするのがシェルスクリプトの掟です
+          SOURCES=$(find src/core \( -name "*.cpp" -o -name "*.c" \))
           
-          # インクルードパスも core 以下の全サブフォルダを自動で追加します
+          # 修正ポイント2: サブディレクトリ(world等)をすべてインクルードパスに含めます
           INCLUDES=$(find src/core -type d | sed 's/^/-I/')
 
-          echo "Found source files: $SOURCES"
+          echo "--- Targeting following sources ---"
+          echo "$SOURCES"
 
           if [ "${{ matrix.os }}" = "windows-latest" ]; then
             g++ -std=c++17 -shared -fPIC -o bin/libvo_se_cut.dll $SOURCES \
                 $INCLUDES -Iinclude -O3 -mavx2 -static -static-libgcc -static-libstdc++
           else
-            # Mac用: $SOURCES を使うことで、別フォルダの CheapTrick も確実に結合します
+            # Mac用: $SOURCES に CheapTrick.c が含まれるようになり、シンボルエラーが消えます
             clang++ -std=c++17 -shared -fPIC -o bin/libvo_se_cut.dylib $SOURCES \
                     $INCLUDES -Iinclude -O3 -undefined dynamic_lookup -w
           fi
