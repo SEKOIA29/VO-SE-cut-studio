@@ -73,47 +73,75 @@ jobs:
         shell: bash
         run: |
           mkdir -p bin obj
-          
-          # 1. ソースとインクルードパスの取得
-          mapfile -t SOURCES < <(find src \( -name "*.cpp" -o -name "*.c" \))
-          mapfile -t INCLUDES < <(find src -type d | sed 's/^/-I/')
-          
+
+          # 1. ソース・インクルード収集
+          SOURCES=$(find src \( -name "*.cpp" -o -name "*.c" \) | sort)
+          INCLUDES=$(find src -type d | sed 's/^/-I/' | tr '\n' ' ')
+
           echo "--- 🔍 Debug Check ---"
-          echo "Found ${#SOURCES[@]} source files."
-          
-          if [ "${#SOURCES[@]}" -le 1 ]; then
-            echo "CRITICAL ERROR: Engine files not found in src/"
+          SRC_COUNT=$(echo "$SOURCES" | grep -c '.')
+          echo "Found $SRC_COUNT source files."
+
+          if [ "$SRC_COUNT" -le 1 ]; then
+            echo "❌ CRITICAL ERROR: Engine files not found in src/"
             ls -R src; exit 1
           fi
 
-          # OSごとのコンパイラとフラグの設定
+          # 2. OS別フラグ設定
           if [ "${{ matrix.os }}" = "windows-latest" ]; then
-            CXX="g++"
-            LDFLAGS="-shared -O3 -mavx2 -static -static-libgcc -static-libstdc++"
-            LIB_OUT="bin/libvo_se_cut.dll"
+            CXX_CMD="g++"
+            EXTRA_FLAGS="-mavx2 -static -static-libgcc -static-libstdc++"
+            OUT="bin/libvo_se_cut.dll"
+            LINK_FLAGS="-shared"
           else
-            CXX="clang++"
-            LDFLAGS="-dynamiclib -undefined dynamic_lookup -w"
-            LIB_OUT="bin/libvo_se_cut.dylib"
+            CXX_CMD="clang++"
+            # Mac用フラグ: -dynamiclib と -undefined dynamic_lookup を維持
+            EXTRA_FLAGS="-undefined dynamic_lookup"
+            OUT="bin/libvo_se_cut.dylib"
+            LINK_FLAGS="-dynamiclib"
           fi
 
-          # 2. 各ファイルを個別にコンパイル（DIRをインクルードパスに含める）
-          OBJS=()
-          for SRC in "${SOURCES[@]}"; do
-            # スラッシュをアンダースコアに置換してユニークなオブジェクト名を作成
-            OBJ="obj/$(echo "$SRC" | tr '/' '_').o"
-            DIR=$(dirname "$SRC")
-            
-            echo "Compiling: $SRC"
-            $CXX -std=c++17 -fPIC -c "$SRC" \
-                 -I"$DIR" "${INCLUDES[@]}" -Iinclude \
-                 -O3 -w -o "$OBJ"
-            OBJS+=("$OBJ")
-          done
+          # 3. 個別コンパイル
+          OBJS=""
+          FAILED=0
 
-          # 3. リンク工程
-          echo "Linking: $LIB_OUT"
-          $CXX -std=c++17 $LDFLAGS -o "$LIB_OUT" "${OBJS[@]}"
+          # パイプ経由で1行ずつ確実に処理（OS間の互換性向上）
+          printf '%s\n' "$SOURCES" | while IFS= read -r SRC; do
+            [ -z "$SRC" ] && continue
+            
+            # オブジェクトファイル名を一意にする
+            OBJ="obj/$(echo "$SRC" | tr '/' '_' | tr ' ' '_').o"
+            DIR=$(dirname "$SRC")
+
+            echo "🔨 Compiling: $SRC"
+            # $CXX_CMD の前に $FLAGS ではなく直接書くことで展開ミスを防ぐ
+            $CXX_CMD -std=c++17 -fPIC -c "$SRC" \
+              -I"$DIR" \
+              $INCLUDES \
+              -Iinclude \
+              -O3 -w \
+              -o "$OBJ"
+
+            if [ $? -ne 0 ]; then
+              echo "❌ Failed: $SRC"
+              exit 1 # サブシェル内なので exit 1 で FAILED の代わりにする
+            fi
+          done || FAILED=1
+
+          if [ "$FAILED" -eq 1 ]; then
+            echo "❌ Compile error. Aborting."
+            exit 1
+          fi
+
+          # 4. リンク（オブジェクトファイルをワイルドカードで指定して結合漏れを防ぐ）
+          echo "🔗 Linking → $OUT"
+          $CXX_CMD -std=c++17 $LINK_FLAGS \
+            -o "$OUT" \
+            obj/*.o \
+            $EXTRA_FLAGS \
+            -O3 -w
+
+          echo "✅ Build complete: $OUT"
           
       - name: 🏁 Deep Integration Test (Headless)
         shell: bash
