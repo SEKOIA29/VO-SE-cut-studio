@@ -136,9 +136,11 @@ jobs:
         shell: bash
         run: |
           export QT_QPA_PLATFORM=offscreen
-          export PYTHONPATH="${PYTHONPATH}:$(pwd):$(pwd)/modules/gui"  # ← 追加
           printf "%s\n" \
             "import sys, os, ctypes" \
+            "sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath('.')), 'modules', 'gui'))" \
+            "sys.path.insert(0, os.path.abspath('modules/gui'))" \
+            "print('sys.path:', sys.path[:3])" \
             "from PySide6.QtWidgets import QApplication" \
             "from PySide6.QtCore import QTimer" \
             "print(f'Platform: {sys.platform}')" \
