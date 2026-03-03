@@ -73,19 +73,21 @@ jobs:
         shell: bash
         run: |
           mkdir -p bin
-          # 修正：カッコ \( \) で囲むことで、サブフォルダ内の .c も .cpp も確実に SOURCES に入れます
+          # --- 修正ポイント：カッコ \( \) で囲むのが正解です ---
+          # これにより、src/core 以下の全階層から .cpp と .c を漏れなく抽出します
           SOURCES=$(find src/core \( -name "*.cpp" -o -name "*.c" \))
           
-          # インクルードパスも core 以下の全サブフォルダを自動で追加
+          # インクルードパスも全サブフォルダを対象にする
           INCLUDES=$(find src/core -type d | sed 's/^/-I/')
 
-          echo "Found sources: $SOURCES"
+          echo "--- Targeting following sources ---"
+          echo "$SOURCES"
 
           if [ "${{ matrix.os }}" = "windows-latest" ]; then
             g++ -std=c++17 -shared -fPIC -o bin/libvo_se_cut.dll $SOURCES \
                 $INCLUDES -Iinclude -O3 -mavx2 -static -static-libgcc -static-libstdc++
           else
-            # Mac用：これで CheapTrick の実体がリンクされ、エラーが解消します
+            # Mac用：これでついに _CheapTrick の実体がライブラリに焼き込まれます
             clang++ -std=c++17 -shared -fPIC -o bin/libvo_se_cut.dylib $SOURCES \
                     $INCLUDES -Iinclude -O3 -undefined dynamic_lookup -w
           fi
