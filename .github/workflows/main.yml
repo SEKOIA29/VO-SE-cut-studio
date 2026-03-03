@@ -74,35 +74,37 @@ jobs:
         run: |
           mkdir -p bin
           
-          # 1. 確実に src/core 以下の全 .cpp と .c を一列に並べる
-          # カッコによる OR 検索が失敗するため、個別に探して結合し、xargs で 1 行にします
-          CPP_FILES=$(find src/core -type f -name "*.cpp")
-          C_FILES=$(find src/core -type f -name "*.c")
-          SOURCES=$(echo $CPP_FILES $C_FILES | xargs)
+          # 1. 確実に全ファイルを個別にリストアップして結合
+          # 複雑な1行コマンドをやめ、変数を追記していく方式で「漏れ」を物理的に防ぎます
+          SRCS_CPP=$(find src -name "*.cpp")
+          SRCS_C=$(find src -name "*.c")
+          SOURCES="$SRCS_CPP $SRCS_C"
           
-          # 2. 全ディレクトリをインクルードパスとして展開
-          INCLUDES=$(find src/core -type d | sed 's|^|-I|' | xargs)
+          # 2. インクルードパスも同様に、src 以下の全ディレクトリを対象にします
+          INCLUDES=$(find src -type d | sed 's|^|-I|' | xargs)
 
           echo "--- 🔍 Debug Check ---"
           echo "Target Sources: $SOURCES"
           
-          # ファイル数チェック（1つしかなければ異常事態として停止）
+          # ファイル数チェック：もし1つなら、WORLDエンジンがリポジトリに無い証拠です
           COUNT=$(echo $SOURCES | wc -w)
           echo "Found $COUNT source files."
+
           if [ "$COUNT" -le 1 ]; then
-            echo "CRITICAL ERROR: Engine files (CheapTrick etc.) were NOT found!"
-            ls -R src/core
+            echo "CRITICAL ERROR: Engine files (CheapTrick etc.) are NOT in 'src' folder!"
+            echo "Current Directory Structure:"
+            ls -R
             exit 1
           fi
 
           if [ "${{ matrix.os }}" = "windows-latest" ]; then
-            # Windows(MinGW): SOURCES が正しく渡れば、リンクエラーは消滅します
+            # Windows(MinGW): ソースが並べば undefined reference は物理的に消滅します
             g++ -std=c++17 -shared -fPIC -o bin/libvo_se_cut.dll $SOURCES $INCLUDES -Iinclude -O3 -mavx2 -static -static-libgcc -static-libstdc++
           else
-            # Mac用: -Wl,-all_load を付けて、Python から見えるようにシンボルを強制保持
+            # Mac用: 改行やスペースの混入を防ぎ、全シンボルを強制保持
             clang++ -std=c++17 -shared -fPIC -o bin/libvo_se_cut.dylib $SOURCES $INCLUDES -Iinclude -O3 -undefined dynamic_lookup -Wl,-all_load -w
           fi
-
+          
       - name: 🏁 Deep Integration Test (Headless)
         shell: bash
         run: |
