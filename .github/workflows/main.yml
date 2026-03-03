@@ -73,21 +73,19 @@ jobs:
         shell: bash
         run: |
           mkdir -p bin
-          # 修正ポイント1: カッコで囲むことで .cpp と .c の両方を確実に全階層から拾います
-          # ※バックスラッシュでカッコをエスケープするのがシェルスクリプトの掟です
+          # 修正：カッコ \( \) で囲むことで、サブフォルダ内の .c も .cpp も確実に SOURCES に入れます
           SOURCES=$(find src/core \( -name "*.cpp" -o -name "*.c" \))
           
-          # 修正ポイント2: サブディレクトリ(world等)をすべてインクルードパスに含めます
+          # インクルードパスも core 以下の全サブフォルダを自動で追加
           INCLUDES=$(find src/core -type d | sed 's/^/-I/')
 
-          echo "--- Targeting following sources ---"
-          echo "$SOURCES"
+          echo "Found sources: $SOURCES"
 
           if [ "${{ matrix.os }}" = "windows-latest" ]; then
             g++ -std=c++17 -shared -fPIC -o bin/libvo_se_cut.dll $SOURCES \
                 $INCLUDES -Iinclude -O3 -mavx2 -static -static-libgcc -static-libstdc++
           else
-            # Mac用: $SOURCES に CheapTrick.c が含まれるようになり、シンボルエラーが消えます
+            # Mac用：これで CheapTrick の実体がリンクされ、エラーが解消します
             clang++ -std=c++17 -shared -fPIC -o bin/libvo_se_cut.dylib $SOURCES \
                     $INCLUDES -Iinclude -O3 -undefined dynamic_lookup -w
           fi
