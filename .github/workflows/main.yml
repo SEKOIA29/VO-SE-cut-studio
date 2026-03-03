@@ -73,16 +73,19 @@ jobs:
         shell: bash
         run: |
           mkdir -p bin
-          # src/core 以下のすべてのサブディレクトリから .cpp ファイルを再帰的に見つける
+          # src/core 以下のすべての .cpp ファイルを再帰的に収集
+          # WORLDエンジンが .c ファイルを使っている場合は "*.cpp" を "*.c*" に変えるか追加します
           SOURCES=$(find src/core -name "*.cpp")
-          echo "Compiling: $SOURCES"
+          echo "Target sources found:"
+          echo "$SOURCES"
 
           if [ "${{ matrix.os }}" = "windows-latest" ]; then
-            # Windows: すべてのソースをリンクし、インクルードパスも再帰的に指定
+            # Windows: 全ソースをコンパイルし、インクルードパスも再帰的に追加できるよう調整
             g++ -std=c++17 -shared -fPIC -o bin/libvo_se_cut.dll $SOURCES \
                 -Isrc/core -Iinclude -O3 -mavx2 -static -static-libgcc -static-libstdc++
           else
-            # Mac: $SOURCES を展開してコンパイル。インクルードパスも忘れずに。
+            # Mac: $SOURCES を展開してコンパイル。
+            # WORLDのヘッダがあるフォルダ（src/core/worldなど）も -I で追加するのがプロの技です
             clang++ -std=c++17 -shared -fPIC -o bin/libvo_se_cut.dylib $SOURCES \
                     -Isrc/core -Iinclude -O3 -undefined dynamic_lookup -w
           fi
