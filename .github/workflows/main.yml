@@ -96,6 +96,7 @@ jobs:
             # Mac用: $SOURCES に cheaptrick.c が入っていれば、これで解決します
             clang++ -std=c++17 -shared -fPIC -o bin/libvo_se_cut.dylib $SOURCES \
                     $INCLUDES -Iinclude -O3 -undefined dynamic_lookup -w
+                    -Wl,-all_load
           fi
 
       - name: 🏁 Deep Integration Test (Headless)
