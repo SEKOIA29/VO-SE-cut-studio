@@ -39,7 +39,16 @@ from PySide6.QtWidgets import (
 
 
 #==================================================================
-
+# VO-SE Engine 用の構造体定義 
+class NoteEvent(ctypes.Structure):
+    _fields_ = [
+        ("wav_path", ctypes.c_char_p),      # char*
+        ("pitch_length", ctypes.c_int),     # int
+        ("pitch_curve", ctypes.POINTER(ctypes.c_double)),   # double*
+        ("gender_curve", ctypes.POINTER(ctypes.c_double)),  # double*
+        ("tension_curve", ctypes.POINTER(ctypes.c_double)), # double*
+        ("breath_curve", ctypes.POINTER(ctypes.c_double)),  # double*
+    ]
 # --- macOS / Windows 両対応のライブラリロード設定 ---
 class VOSEBridge:
     def __init__(self):
@@ -47,21 +56,56 @@ class VOSEBridge:
         self.load_engine()
 
     def load_engine(self):
-        # 実行環境に合わせて拡張子とディレクトリを切り替え
-        ext = ".dylib" if platform.system() == "Darwin" else ".dll"
-        lib_path = os.path.join(os.path.dirname(__file__), "bin", f"libvo_se_cut{ext}")
+        # 1. OS別のライブラリパス設定
+        is_mac = platform.system() == "Darwin"
+        ext = ".dylib" if is_mac else ".dll"
+        
+        # 実行ファイルのディレクトリを取得
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        lib_path = os.path.join(base_dir, "bin", f"libvo_se_cut{ext}")
 
         if not os.path.exists(lib_path):
             print(f"⚠️ Warning: Engine not found at {lib_path}")
             return
 
         try:
-            # macOSでは RTLD_GLOBAL を指定するとシンボルの競合を防げる場合がある
-            self.lib = ctypes.CDLL(lib_path, mode=ctypes.RTLD_GLOBAL)
-            print(f"✅ Successfully loaded: {lib_path}")
-        except Exception as e:
-            print(f"❌ Failed to load engine: {e}")
+            # 2. ライブラリのロード
+            if is_mac:
+                self.lib = ctypes.CDLL(lib_path, mode=ctypes.RTLD_GLOBAL)
+            else:
+                # WindowsではWinDLLを使う場合があるが、基本はCDLLでOK
+                self.lib = ctypes.CDLL(lib_path)
+            
+            # 3. 関数の型定義 (Pythonに引数の種類を教える)
+            # void execute_render(NoteEvent* notes, int note_count, const char* output_path)
+            self.lib.execute_render.argtypes = [
+                ctypes.POINTER(NoteEvent), # 第1引数: NoteEventの配列(ポインタ)
+                ctypes.c_int,              # 第2引数: ノート数
+                ctypes.c_char_p            # 第3引数: 出力ファイル名
+            ]
+            self.lib.execute_render.restype = None # 戻り値なし(void)
 
+            print(f"✅ VO-SE Engine (v1.0) Successfully loaded: {lib_path}")
+            
+        except Exception as e:
+            print(f"❌ Failed to load engine or define functions: {e}")
+
+    def render(self, notes_list, output_file="output.wav"):
+        """
+        Pythonのリストからエンジンを呼び出すヘルパー関数
+        """
+        if not self.lib:
+            print("❌ Engine not loaded.")
+            return
+
+        count = len(notes_list)
+        # NoteEvent構造体の配列を作成
+        notes_array = (NoteEvent * count)(*notes_list)
+        
+        # C言語のエンジンを実行
+        self.lib.execute_render(notes_array, count, output_file.encode('utf-8'))
+        print(f"🎬 Render complete: {output_file}")
+        
 class TimelineHeader(QWidget):
     """
     タイムライン上部の時間目盛りを表示するウィジェット
