@@ -6,6 +6,7 @@
 import sys
 import ctypes
 import os
+import platform
 
 #=================================================
 #PYQT
@@ -35,6 +36,9 @@ from PySide6.QtGui import (
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QFrame, QScrollBar
 )
+
+
+#==================================================================
 
 # --- macOS / Windows 両対応のライブラリロード設定 ---
 class VOSEBridge:
