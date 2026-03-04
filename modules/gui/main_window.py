@@ -1,6 +1,15 @@
 #main_window.py
 
+#=================================================
+#基本ライブラリのインポート
+#=================================================
 import sys
+import ctypes
+import os
+
+#=================================================
+#PYQT
+#=================================================
 from PySide6.QtWidgets import (
     QApplication,
     QMainWindow,
@@ -26,6 +35,28 @@ from PySide6.QtGui import (
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QFrame, QScrollBar
 )
+
+# --- macOS / Windows 両対応のライブラリロード設定 ---
+class VOSEBridge:
+    def __init__(self):
+        self.lib = None
+        self.load_engine()
+
+    def load_engine(self):
+        # 実行環境に合わせて拡張子とディレクトリを切り替え
+        ext = ".dylib" if platform.system() == "Darwin" else ".dll"
+        lib_path = os.path.join(os.path.dirname(__file__), "bin", f"libvo_se_cut{ext}")
+
+        if not os.path.exists(lib_path):
+            print(f"⚠️ Warning: Engine not found at {lib_path}")
+            return
+
+        try:
+            # macOSでは RTLD_GLOBAL を指定するとシンボルの競合を防げる場合がある
+            self.lib = ctypes.CDLL(lib_path, mode=ctypes.RTLD_GLOBAL)
+            print(f"✅ Successfully loaded: {lib_path}")
+        except Exception as e:
+            print(f"❌ Failed to load engine: {e}")
 
 class TimelineHeader(QWidget):
     """
