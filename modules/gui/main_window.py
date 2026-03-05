@@ -7,6 +7,7 @@ import sys
 import ctypes
 import os
 import platform
+from typing import List, Dict, Any, Optional, Union
 
 #=================================================
 #PYQT
