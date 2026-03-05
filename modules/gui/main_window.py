@@ -1,6 +1,8 @@
 # main_window.py
+"""
 # VO-SE Cut Studio — メインウィンドウ完全統合版
 # doc4 + doc5 + vo_se_engine.py を統合
+"""
 # =================================================
 
 from __future__ import annotations
