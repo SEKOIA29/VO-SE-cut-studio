@@ -53,7 +53,9 @@ class NoteEvent(ctypes.Structure):
 # --- macOS / Windows 両対応のライブラリロード設定 ---
 class VOSEBridge:
     def __init__(self):
-        self.lib = None
+        self.lib: Optional[ctypes.CDLL] = None
+        # 型を List[Any] として明示し、Unknown を回避
+        self.keep_alive: List[Any] = [] 
         self.load_engine()
 
     def load_engine(self):
@@ -111,11 +113,18 @@ class VOSEBridge:
         NotesArrayType = NoteEvent * count
         notes_array = NotesArrayType()
 
+        count: int = len(notes_list)
+        NotesArray = NoteEvent * count
+        notes_array = NotesArray()
+
         # 3. 前回のレンダリングで使用した一時メモリをクリア
         # self.keep_alive はクラスの __init__ で List[Any] として定義してください
         self.keep_alive = []
 
         for i, data in enumerate(notes_list):
+
+            temp_list: List[Any] = [c_wav_path, c_pitch, c_gender, c_tension, c_breath]
+            self.keep_alive.extend(temp_list)
             # 辞書からデータを取り出し、型をキャストして安全性を確保
             # これにより Pyright の "Argument type is unknown" を解決
             phoneme_str: str = str(data.get('phoneme', 'a'))
