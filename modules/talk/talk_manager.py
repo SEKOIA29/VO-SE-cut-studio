@@ -34,7 +34,7 @@ class AccentPhrase:
     text: str
     mora_count: int
     accent_position: int
-    f0_values: list[float] = field(default_factory=list)
+    f0_values: List[float] = field(default_factory=list)
 
 
 # ══════════════════════════════════════════════════════════════
@@ -62,7 +62,7 @@ class IntonationAnalyzer:
         if not text:
             return ""
         try:
-            labels: list[str] = self._get_labels(text)
+            labels: List[str] = self._get_labels(text)
             self.last_analysis_status = True
             return "\n".join(labels)
         except Exception as e:
@@ -71,24 +71,21 @@ class IntonationAnalyzer:
             print(msg)
             return msg
 
-    def analyze_to_phonemes(self, text: str) -> list[str]:
+    def analyze_to_phonemes(self, text: str) -> List[str]:
         """
         テキストから音素列を抽出して返す。
-        pyopenjtalk.g2p() を使用（バージョン間で最も安定した API）。
-
-        例: "こんにちは" → ["k", "o", "N", "n", "i", "ch", "i", "w", "a"]
         """
         if not text:
             return []
         try:
-            # kana=False で IPA 近似のローマ字音素列を取得
-            phoneme_str: str = pyopenjtalk.g2p(text, kana=False)
-            return [p for p in phoneme_str.split() if p]
+            # pyopenjtalk.g2p は Unknown を返す場合があるため cast
+            raw_phonemes = cast(str, pyopenjtalk.g2p(text, kana=False))
+            return [p for p in raw_phonemes.split() if p]
         except Exception as e:
             print(f"[IntonationAnalyzer] g2p error: {e}")
             return []
 
-    def analyze_to_accent_phrases(self, text: str) -> list[AccentPhrase]:
+    def analyze_to_accent_phrases(self, text: str) -> List[AccentPhrase]:
         """
         アクセント句リストを返す（VO-SE ピッチ編集用）。
         """
@@ -105,30 +102,29 @@ class IntonationAnalyzer:
     # 内部実装
     # ----------------------------------------------------------
 
-    def _get_labels(self, text: str) -> list[str]:
+    def _get_labels(self, text: str) -> List[str]:
         """pyopenjtalk のバージョン差を吸収してラベルを取得する"""
+        # features の型を List[Dict[str, Any]] として確定させる
         if hasattr(pyopenjtalk, "run_frontend"):
-            features = pyopenjtalk.run_frontend(text)
+            features = cast(List[Dict[str, Any]], pyopenjtalk.run_frontend(text))
         else:
-            features = pyopenjtalk.extract_fullcontext(text)
-        return pyopenjtalk.make_label(features)
+            features = cast(List[Dict[str, Any]], pyopenjtalk.extract_fullcontext(text))
+        
+        # labels も List[str] として cast
+        return cast(List[str], pyopenjtalk.make_label(features))
 
-    def _parse_labels(self, labels: list[str]) -> list[AccentPhrase]:
+    def _parse_labels(self, labels: List[str]) -> List[AccentPhrase]:
         """
         HTS フルコンテキストラベルからアクセント句・F0 を抽出する。
-        ラベル形式の A: フィールド（アクセント型）と F0 推定値を利用。
         """
-        phrases: list[AccentPhrase] = []
-        current_moras: list[tuple[str, float]] = []
+        phrases: List[AccentPhrase] = []
+        current_moras: List[Tuple[str, float]] = []
         accent_pos: int = 0
         prev_phrase_id: str = ""
 
         for label in labels:
-            # 音素名（p3 フィールド）を取得
             parts = label.split("-")
             phoneme = parts[1] if len(parts) > 1 else "?"
-
-            # アクセント句 ID（/E: フィールド）でグループ化
             phrase_id = self._extract_field(label, "/E:")
 
             if phrase_id != prev_phrase_id and current_moras:
@@ -140,14 +136,12 @@ class IntonationAnalyzer:
                 ))
                 current_moras = []
 
-            # A: フィールドからアクセント型を取得
             try:
                 a_field = self._extract_field(label, "/A:")
                 accent_pos = int(a_field.split("_")[0]) if a_field else 0
             except (ValueError, IndexError):
                 accent_pos = 0
 
-            # 簡易 F0 推定（実際は HMM から取るべきだが近似値として利用）
             f0 = 130.0 if accent_pos == 0 else 150.0 + accent_pos * 5.0
 
             if phoneme not in ("sil", "pau", "?"):
@@ -155,7 +149,6 @@ class IntonationAnalyzer:
 
             prev_phrase_id = phrase_id
 
-        # 末尾の句を追加
         if current_moras:
             phrases.append(AccentPhrase(
                 text="".join(m[0] for m in current_moras),
@@ -181,13 +174,9 @@ class IntonationAnalyzer:
 # 3. トークイベント生成
 # ══════════════════════════════════════════════════════════════
 
-def generate_accent_curve(phoneme: str, accent_pos: int = 0) -> list[float]:
-    """
-    音素とアクセント位置からピッチカーブを生成する。
-    将来的には AccentPhrase.f0_values を直接使用することを推奨。
-    """
+def generate_accent_curve(phoneme: str, accent_pos: int = 0) -> List[float]:
+    """音素とアクセント位置からピッチカーブを生成する"""
     base_f0 = 150.0 + accent_pos * 5.0
-    # 子音は無声（0Hz）、母音はピッチあり
     voiced = phoneme in list("aeiou") + ["N", "m", "n", "r", "w", "y", "v"]
     return [base_f0 if voiced else 0.0] * 50
 
@@ -195,28 +184,19 @@ def generate_accent_curve(phoneme: str, accent_pos: int = 0) -> list[float]:
 def generate_talk_events(
     text: str,
     analyzer: IntonationAnalyzer,
-) -> list[dict[str, Any]]:
-    """
-    テキストから VO-SE エンジン用トークイベントリストを生成する。
-
-    Returns:
-        List of dicts with keys:
-            phoneme, pitch, gender, tension, breath,
-            offset, consonant, cutoff, pre_utterance, overlap
-    """
+) -> List[Dict[str, Any]]:
+    """VO-SE エンジン用トークイベントリストを生成する"""
     phonemes = analyzer.analyze_to_phonemes(text)
-    # アクセント句も取得してピッチ生成に活用
     accent_phrases = analyzer.analyze_to_accent_phrases(text)
 
-    # 音素→アクセント位置マップ（簡易版：句単位で均等割り当て）
-    accent_map: dict[int, int] = {}
+    accent_map: Dict[int, int] = {}
     idx = 0
     for phrase in accent_phrases:
         for _ in range(phrase.mora_count):
             accent_map[idx] = phrase.accent_position
             idx += 1
 
-    talk_notes: list[dict[str, Any]] = []
+    talk_notes: List[Dict[str, Any]] = []
     for i, phoneme in enumerate(phonemes):
         accent_pos = accent_map.get(i, 0)
         pitch_curve = generate_accent_curve(phoneme, accent_pos)
@@ -227,8 +207,7 @@ def generate_talk_events(
             "pitch":         pitch_curve,
             "gender":        [0.5] * length,
             "tension":       [0.5] * length,
-            "breath":        [0.1] * length,   # 0.1 で自然な息感
-            # UTAU パラメータ（デフォルト値）
+            "breath":        [0.1] * length,
             "offset":        0.0,
             "consonant":     0.0,
             "cutoff":        0.0,
@@ -244,10 +223,7 @@ def generate_talk_events(
 # ══════════════════════════════════════════════════════════════
 
 class NoteEvent(ctypes.Structure):
-    """
-    VO-SE C++ エンジン用構造体。
-    C++ 側の struct NoteEvent とメモリ配置を完全一致させること。
-    """
+    """VO-SE C++ エンジン用構造体"""
     _fields_ = [
         ("wav_path",           ctypes.c_char_p),
         ("pitch_length",       ctypes.c_int),
@@ -255,67 +231,55 @@ class NoteEvent(ctypes.Structure):
         ("gender_curve",       ctypes.POINTER(ctypes.c_double)),
         ("tension_curve",      ctypes.POINTER(ctypes.c_double)),
         ("breath_curve",       ctypes.POINTER(ctypes.c_double)),
-        # UTAU 互換パラメータ
-        ("offset_ms",          ctypes.c_double),   # 原音の開始位置
-        ("consonant_ms",       ctypes.c_double),   # 固定範囲（子音部）
-        ("cutoff_ms",          ctypes.c_double),   # 右ブランク
-        ("pre_utterance_ms",   ctypes.c_double),   # 先行発声
-        ("overlap_ms",         ctypes.c_double),   # オーバーラップ
+        ("offset_ms",          ctypes.c_double),
+        ("consonant_ms",       ctypes.c_double),
+        ("cutoff_ms",          ctypes.c_double),
+        ("pre_utterance_ms",   ctypes.c_double),
+        ("overlap_ms",         ctypes.c_double),
     ]
 
 
 class VoseRendererBridge:
-    """
-    Python ↔ C++ DLL/dylib ブリッジ。
-    GC 対策として配列参照を keep_alive に保持する。
-    """
+    """Python ↔ C++ DLL/dylib ブリッジ"""
 
     def __init__(self, dll_path: str) -> None:
+        self.lib: Optional[ctypes.CDLL] = None
         try:
-            # macOS は RTLD_GLOBAL でシンボルをグローバル公開
             if platform.system() == "Darwin":
                 self.lib = ctypes.CDLL(dll_path, mode=ctypes.RTLD_GLOBAL)
             else:
                 self.lib = ctypes.CDLL(dll_path)
 
-            self.lib.init_official_engine.argtypes = []
-            self.lib.init_official_engine.restype = None
+            if self.lib:
+                self.lib.init_official_engine.argtypes = []
+                self.lib.init_official_engine.restype = None
 
-            self.lib.execute_render.argtypes = [
-                ctypes.POINTER(NoteEvent),
-                ctypes.c_int,
-                ctypes.c_char_p,
-            ]
-            self.lib.execute_render.restype = None
+                self.lib.execute_render.argtypes = [
+                    ctypes.POINTER(NoteEvent),
+                    ctypes.c_int,
+                    ctypes.c_char_p,
+                ]
+                self.lib.execute_render.restype = None
 
-            self.lib.init_official_engine()
-            print(f"✅ VO-SE Engine Initialized: {dll_path}")
+                self.lib.init_official_engine()
+                print(f"✅ VO-SE Engine Initialized: {dll_path}")
 
         except Exception as e:
             print(f"❌ Engine Load Error: {e}\n{traceback.format_exc()}")
             self.lib = None
 
-    def render(self, notes_data: list[dict[str, Any]], output_path: str) -> bool:
-        """
-        Python データを NoteEvent 配列に変換して C++ レンダラーに渡す。
-
-        Returns:
-            True on success, False on failure.
-        """
+    def render(self, notes_data: List[Dict[str, Any]], output_path: str) -> bool:
+        """NoteEvent 配列に変換して C++ レンダラーに渡す"""
         if self.lib is None:
-            print("❌ render() called but engine is not loaded.")
             return False
 
         note_count = len(notes_data)
         if note_count == 0:
-            print("⚠️ render() called with empty notes_data.")
             return False
 
         NotesArray = NoteEvent * note_count
         c_notes = NotesArray()
-
-        # ★ GC 対策：C 側にポインタを渡す間、Python 配列を生存させる
-        keep_alive: list[Any] = []
+        keep_alive: List[Any] = []
 
         for i, data in enumerate(notes_data):
             p_arr = (ctypes.c_double * len(data["pitch"]))(*data["pitch"])
@@ -324,24 +288,23 @@ class VoseRendererBridge:
             b_arr = (ctypes.c_double * len(data["breath"]))(*data["breath"])
             keep_alive.extend([p_arr, g_arr, t_arr, b_arr])
 
-            c_notes[i].wav_path         = data["phoneme"].encode("utf-8")
+            c_notes[i].wav_path         = cast(str, data["phoneme"]).encode("utf-8")
             c_notes[i].pitch_length     = len(data["pitch"])
             c_notes[i].pitch_curve      = p_arr
             c_notes[i].gender_curve     = g_arr
             c_notes[i].tension_curve    = t_arr
             c_notes[i].breath_curve     = b_arr
-            c_notes[i].offset_ms        = data.get("offset",        0.0)
-            c_notes[i].consonant_ms     = data.get("consonant",     0.0)
-            c_notes[i].cutoff_ms        = data.get("cutoff",        0.0)
-            c_notes[i].pre_utterance_ms = data.get("pre_utterance", 0.0)
-            c_notes[i].overlap_ms       = data.get("overlap",       0.0)
+            c_notes[i].offset_ms        = float(data.get("offset", 0.0))
+            c_notes[i].consonant_ms     = float(data.get("consonant", 0.0))
+            c_notes[i].cutoff_ms        = float(data.get("cutoff", 0.0))
+            c_notes[i].pre_utterance_ms = float(data.get("pre_utterance", 0.0))
+            c_notes[i].overlap_ms       = float(data.get("overlap", 0.0))
 
         try:
             self.lib.execute_render(c_notes, note_count, output_path.encode("utf-8"))
-            print(f"🎬 Render finished: {output_path}")
             return True
         except Exception as e:
-            print(f"❌ execute_render error: {e}\n{traceback.format_exc()}")
+            print(f"❌ execute_render error: {e}")
             return False
 
 
@@ -350,69 +313,37 @@ class VoseRendererBridge:
 # ══════════════════════════════════════════════════════════════
 
 class TalkManager(QObject):
-    """
-    pyopenjtalk を使用した TTS マネージャー。
-    htsvoice の切替・フォールバックを自動処理する。
-    """
+    """pyopenjtalk を使用した TTS マネージャー"""
 
     def __init__(self) -> None:
         super().__init__()
-        self.current_voice_path: str | None = None
+        self.current_voice_path: Optional[str] = None
         self.is_speaking: bool = False
-
-    # ----------------------------------------------------------
-    # ボイス設定
-    # ----------------------------------------------------------
 
     def set_voice(self, htsvoice_path: str) -> bool:
         if htsvoice_path and os.path.exists(htsvoice_path):
             self.current_voice_path = htsvoice_path
             return True
-        print(f"⚠️ Voice path not found: {htsvoice_path}")
         return False
-
-    # ----------------------------------------------------------
-    # 簡易スピーク（再生まで行う場合はここを拡張）
-    # ----------------------------------------------------------
-
-    def speak(self, text: str) -> None:
-        if not text:
-            return
-        try:
-            print(f"🗣 Speaking: {text}")
-            # TODO: 再生処理を追加する場合はここに実装
-        except Exception as e:
-            print(f"Speech Error: {e}\n{traceback.format_exc()}")
-
-    # ----------------------------------------------------------
-    # WAV 合成
-    # ----------------------------------------------------------
 
     def synthesize(
         self,
         text: str,
         output_path: str,
         speed: float = 1.0,
-    ) -> tuple[bool, str]:
-        """
-        テキストを WAV に合成して output_path に保存する。
-
-        Returns:
-            (True, output_path) on success
-            (False, error_message) on failure
-        """
+    ) -> Tuple[bool, str]:
+        """テキストを WAV に合成して保存する"""
         if not text:
             return False, "テキストが空です。"
 
         try:
-            # 出力先ディレクトリを確保
             output_dir = os.path.dirname(output_path)
             if output_dir:
                 os.makedirs(output_dir, exist_ok=True)
 
-            x: np.ndarray | None = None
+            x: Optional[NDArray[Any]] = None
             sr: int = 48000
-            options: dict[str, Any] = {"speed": float(speed)}
+            options: Dict[str, Any] = {"speed": float(speed)}
             voice = self.current_voice_path or ""
 
             if voice and os.path.exists(voice):
@@ -420,56 +351,54 @@ class TalkManager(QObject):
             else:
                 x, sr = self._tts_default(text, options)
 
+            # エラー: Condition will always evaluate to True の解消
+            # x が Optional[NDArray] なので、まず None チェックを行う
             if x is None:
                 return False, "音声データの生成に失敗しました。"
+            
+            if len(x) == 0:
+                return False, "生成された音声が空です。"
 
-            # int16 変換して保存
+            # 型を int16 に確定させて書き出し
             x_int16 = np.clip(np.asarray(x), -32768, 32767).astype(np.int16)
             sf.write(output_path, x_int16, sr)
 
-            if os.path.exists(output_path):
-                print(f"✅ Saved: {output_path}")
-                return True, output_path
-
-            return False, f"書き出し失敗: {output_path}"
+            return True, output_path
 
         except Exception as e:
-            msg = f"Critical synthesis error: {e}\n{traceback.format_exc()}"
-            print(msg)
-            return False, msg
-
-    # ----------------------------------------------------------
-    # 内部実装
-    # ----------------------------------------------------------
+            return False, str(e)
 
     def _tts_with_voice(
         self,
         text: str,
         voice: str,
-        options: dict[str, Any],
-    ) -> tuple[np.ndarray | None, int]:
-        """
-        指定ボイスで TTS を試みる。
-        htsvoice → font → デフォルトの順でフォールバック。
-        """
+        options: Dict[str, Any],
+    ) -> Tuple[Optional[NDArray[Any]], int]:
+        """指定ボイスで TTS を試みる"""
+        # pyopenjtalk.tts の戻り値を明示的に Tuple[NDArray, int] | None として扱う
         for key in ("htsvoice", "font"):
             try:
-                result = pyopenjtalk.tts(text, **{**options, key: voice})
-                if result is not None and len(result) >= 2:
-                    return result[0], result[1]
-            except (TypeError, Exception) as e:
-                print(f"DEBUG: '{key}' kwarg failed: {e}")
+                # 辞書マージを利用して引数を作成
+                tts_args = {**options, key: voice}
+                result = pyopenjtalk.tts(text, **tts_args)
+                
+                if result is not None:
+                    # result は (ndarray, int) であることを Pyright に教える
+                    res_tuple = cast(Tuple[NDArray[Any], int], result)
+                    return res_tuple[0], res_tuple[1]
+            except Exception:
+                continue
 
-        print("DEBUG: Falling back to default voice")
         return self._tts_default(text, options)
 
     @staticmethod
     def _tts_default(
         text: str,
-        options: dict[str, Any],
-    ) -> tuple[np.ndarray | None, int]:
+        options: Dict[str, Any],
+    ) -> Tuple[Optional[NDArray[Any]], int]:
         """デフォルトボイスで TTS を実行する"""
         result = pyopenjtalk.tts(text, **options)
-        if result is not None and len(result) >= 2:
-            return result[0], result[1]
+        if result is not None:
+            res_tuple = cast(Tuple[NDArray[Any], int], result)
+            return res_tuple[0], res_tuple[1]
         return None, 48000
