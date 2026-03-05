@@ -15,9 +15,10 @@ import ctypes
 import platform
 import traceback
 from dataclasses import dataclass, field
-from typing import Any
+from typing import List, Dict, Any, Optional, Tuple, cast, Union
 
 import numpy as np
+from numpy.typing import NDArray
 import pyopenjtalk
 import soundfile as sf
 from PySide6.QtCore import QObject
