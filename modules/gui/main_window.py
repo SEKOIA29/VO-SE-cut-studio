@@ -90,21 +90,69 @@ class VOSEBridge:
         except Exception as e:
             print(f"❌ Failed to load engine or define functions: {e}")
 
-    def render(self, notes_list, output_file="output.wav"):
+    def render(self, notes_list: List[Dict[str, Any]], output_file: str = "output.wav") -> None:
         """
-        Pythonのリストからエンジンを呼び出すヘルパー関数
+        Pythonのリストからエンジンを呼び出すヘルパー関数。
+        Pyrightのエラー(reportUnknownParameterType等)を完全に解決し、メモリ安全性を確保します。
         """
         if not self.lib:
             print("❌ Engine not loaded.")
             return
 
-        count = len(notes_list)
-        # NoteEvent構造体の配列を作成
-        notes_array = (NoteEvent * count)(*notes_list)
-        
-        # C言語のエンジンを実行
-        self.lib.execute_render(notes_array, count, output_file.encode('utf-8'))
-        print(f"🎬 Render complete: {output_file}")
+        # 1. データの個数を確定 (int型であることを明示)
+        count: int = len(notes_list)
+        if count == 0:
+            print("⚠️ No notes to render.")
+            return
+
+        # 2. C言語側の構造体配列を作成
+        # 型ヒントを明示的に指定して Pyright の警告を回避
+        NotesArrayType = NoteEvent * count
+        notes_array = NotesArrayType()
+
+        # 3. 前回のレンダリングで使用した一時メモリをクリア
+        # self.keep_alive はクラスの __init__ で List[Any] として定義してください
+        self.keep_alive = []
+
+        for i, data in enumerate(notes_list):
+            # 辞書からデータを取り出し、型をキャストして安全性を確保
+            # これにより Pyright の "Argument type is unknown" を解決
+            phoneme_str: str = str(data.get('phoneme', 'a'))
+            pitch_list: List[float] = list(data.get('pitch', [150.0] * 50))
+            gender_list: List[float] = list(data.get('gender', [0.5] * 50))
+            tension_list: List[float] = list(data.get('tension', [0.5] * 50))
+            breath_list: List[float] = list(data.get('breath', [0.0] * 50))
+
+            # --- C言語用の型に変換 ---
+            # 文字列をバイト列に変換
+            c_wav_path = phoneme_str.encode('utf-8')
+            
+            # リストを C の double 配列に変換
+            # ※ここで生成した配列オブジェクトを保持しておかないと、Cの関数実行前にGCされる
+            c_pitch = (ctypes.c_double * len(pitch_list))(*pitch_list)
+            c_gender = (ctypes.c_double * len(gender_list))(*gender_list)
+            c_tension = (ctypes.c_double * len(tension_list))(*tension_list)
+            c_breath = (ctypes.c_double * len(breath_list))(*breath_list)
+
+            # メモリが解放されないようリストに保持
+            self.keep_alive.extend([c_wav_path, c_pitch, c_gender, c_tension, c_breath])
+
+            # 構造体へ代入
+            notes_array[i].wav_path = c_wav_path
+            notes_array[i].pitch_length = len(pitch_list)
+            notes_array[i].pitch_curve = c_pitch
+            notes_array[i].gender_curve = c_gender
+            notes_array[i].tension_curve = c_tension
+            notes_array[i].breath_curve = c_breath
+
+        # 4. C言語のエンジンを実行
+        # 文字列引数も encode して型を合わせる
+        try:
+            output_path_bytes = output_file.encode('utf-8')
+            self.lib.execute_render(notes_array, count, output_path_bytes)
+            print(f"🎬 Render complete: {output_file}")
+        except Exception as e:
+            print(f"❌ Execution error: {e}")
         
 class TimelineHeader(QWidget):
     """
