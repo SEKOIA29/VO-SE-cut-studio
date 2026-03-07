@@ -12,7 +12,7 @@ import os
 import ctypes
 import platform
 import traceback
-from typing import Any, List, Dict, Optional
+from typing import Any, List, Dict, Optional, TYPE_CHECKING
 
 # =================================================
 # PySide6
@@ -28,10 +28,34 @@ from PySide6.QtGui import (
     QColor, QBrush, QPainter, QPen, QFont, QPaintEvent, QMouseEvent
 )
 
+
+
+if TYPE_CHECKING:
+    # 型チェック時のみ読み込む（実行時には影響しない）
+    from vo_se_engine import (
+        IntonationAnalyzer,
+        TalkManager,
+        generate_talk_events,
+    )
+else:
+    # 実行時は try-except で動的に読み込む
+    try:
+        from vo_se_engine import (
+            IntonationAnalyzer,
+            TalkManager,
+            generate_talk_events,
+        )
+        _ENGINE_AVAILABLE = True
+    except ImportError:
+        _ENGINE_AVAILABLE = False
+        IntonationAnalyzer = Any # 型チェック回避用
+        TalkManager = Any
+        generate_talk_events = Any
 # =================================================
 # VO-SE Engine — vo_se_engine.py からインポート
 # 同ディレクトリに vo_se_engine.py が必要
 # =================================================
+_ENGINE_AVAILABLE: bool = False
 try:
     from vo_se_engine import (
         IntonationAnalyzer,
