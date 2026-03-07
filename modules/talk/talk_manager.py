@@ -397,8 +397,12 @@ class TalkManager(QObject):
         options: Dict[str, Any],
     ) -> Tuple[Optional[NDArray[Any]], int]:
         """デフォルトボイスで TTS を実行する"""
-        result = pyopenjtalk.tts(text, **options)
+        # pyopenjtalk.tts の戻り値は通常 (NDArray, int) または None
+        result: Optional[Tuple[NDArray[Any], int]] = pyopenjtalk.tts(text, **options)
+        
         if result is not None:
+            # result が Tuple であることを明示的にキャスト
             res_tuple = cast(Tuple[NDArray[Any], int], result)
             return res_tuple[0], res_tuple[1]
-        return None, 48000
+            
+        return None, 48000  # 必要に応じてデフォルトのサンプリングレートを明示
