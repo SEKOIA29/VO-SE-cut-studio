@@ -23,10 +23,18 @@ import pyopenjtalk
 import soundfile as sf
 from PySide6.QtCore import QObject
 
+# --- Pyright 対策: 型情報を持たない外部ライブラリを Any にキャストして警告を抑制 ---
+_pyopenjtalk: Any = pyopenjtalk
+_sf: Any = sf
+
 
 # ══════════════════════════════════════════════════════════════
 # 1. データクラス
 # ══════════════════════════════════════════════════════════════
+
+# Pyright の list[Unknown] エラーを防ぐための型付きファクトリ関数
+def _default_float_list() -> List[float]:
+    return []
 
 @dataclass
 class AccentPhrase:
@@ -34,7 +42,7 @@ class AccentPhrase:
     text: str
     mora_count: int
     accent_position: int
-    f0_values: List[float] = field(default_factory=list)
+    f0_values: List[float] = field(default_factory=_default_float_list)
 
 
 # ══════════════════════════════════════════════════════════════
@@ -78,8 +86,8 @@ class IntonationAnalyzer:
         if not text:
             return []
         try:
-            # pyopenjtalk.g2p は Unknown を返す場合があるため cast
-            raw_phonemes = cast(str, pyopenjtalk.g2p(text, kana=False))
+            # Pyright 対策: _pyopenjtalk 経由で呼び出し
+            raw_phonemes = cast(str, _pyopenjtalk.g2p(text, kana=False))
             return [p for p in raw_phonemes.split() if p]
         except Exception as e:
             print(f"[IntonationAnalyzer] g2p error: {e}")
@@ -104,14 +112,12 @@ class IntonationAnalyzer:
 
     def _get_labels(self, text: str) -> List[str]:
         """pyopenjtalk のバージョン差を吸収してラベルを取得する"""
-        # features の型を List[Dict[str, Any]] として確定させる
-        if hasattr(pyopenjtalk, "run_frontend"):
-            features = cast(List[Dict[str, Any]], pyopenjtalk.run_frontend(text))
+        if hasattr(_pyopenjtalk, "run_frontend"):
+            features = cast(List[Dict[str, Any]], _pyopenjtalk.run_frontend(text))
         else:
-            features = cast(List[Dict[str, Any]], pyopenjtalk.extract_fullcontext(text))
+            features = cast(List[Dict[str, Any]], _pyopenjtalk.extract_fullcontext(text))
         
-        # labels も List[str] として cast
-        return cast(List[str], pyopenjtalk.make_label(features))
+        return cast(List[str], _pyopenjtalk.make_label(features))
 
     def _parse_labels(self, labels: List[str]) -> List[AccentPhrase]:
         """
@@ -351,17 +357,16 @@ class TalkManager(QObject):
             else:
                 x, sr = self._tts_default(text, options)
 
-            # エラー: Condition will always evaluate to True の解消
-            # x が Optional[NDArray] なので、まず None チェックを行う
             if x is None:
                 return False, "音声データの生成に失敗しました。"
             
             if len(x) == 0:
                 return False, "生成された音声が空です。"
 
-            # 型を int16 に確定させて書き出し
             x_int16 = np.clip(np.asarray(x), -32768, 32767).astype(np.int16)
-            sf.write(output_path, x_int16, sr)
+            
+            # Pyright 対策: _sf 経由で呼び出し
+            _sf.write(output_path, x_int16, sr)
 
             return True, output_path
 
@@ -375,15 +380,13 @@ class TalkManager(QObject):
         options: Dict[str, Any],
     ) -> Tuple[Optional[NDArray[Any]], int]:
         """指定ボイスで TTS を試みる"""
-        # pyopenjtalk.tts の戻り値を明示的に Tuple[NDArray, int] | None として扱う
         for key in ("htsvoice", "font"):
             try:
-                # 辞書マージを利用して引数を作成
                 tts_args = {**options, key: voice}
-                result = pyopenjtalk.tts(text, **tts_args)
+                # Pyright の Condition always True を防ぐため Any で受ける
+                result: Any = _pyopenjtalk.tts(text, **tts_args)
                 
-                if result is not None:
-                    # result は (ndarray, int) であることを Pyright に教える
+                if result:
                     res_tuple = cast(Tuple[NDArray[Any], int], result)
                     return res_tuple[0], res_tuple[1]
             except Exception:
@@ -397,12 +400,10 @@ class TalkManager(QObject):
         options: Dict[str, Any],
     ) -> Tuple[Optional[NDArray[Any]], int]:
         """デフォルトボイスで TTS を実行する"""
-        # pyopenjtalk.tts の戻り値は通常 (NDArray, int) または None
-        result: Optional[Tuple[NDArray[Any], int]] = pyopenjtalk.tts(text, **options)
+        result: Any = _pyopenjtalk.tts(text, **options)
         
-        if result is not None:
-            # result が Tuple であることを明示的にキャスト
+        if result:
             res_tuple = cast(Tuple[NDArray[Any], int], result)
             return res_tuple[0], res_tuple[1]
             
-        return None, 48000  # 必要に応じてデフォルトのサンプリングレートを明示
+        return None, 48000
