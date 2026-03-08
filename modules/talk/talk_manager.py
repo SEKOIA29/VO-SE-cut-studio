@@ -1,5 +1,5 @@
 """
-vo_se_engine.py
+talk_manager.py
 VO-SE Cut Studio — コアエンジン統合モジュール
 - IntonationAnalyzer : pyopenjtalk による音素・F0解析
 - generate_talk_events: トークイベント生成
