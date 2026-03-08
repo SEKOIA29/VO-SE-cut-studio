@@ -56,7 +56,7 @@ else:
 # =================================================
 
 # エラー原因 1: _ENGINE_AVAILABLE を一度だけ宣言し、型を明示する
-_ENGINE_AVAILABLE: bool = False
+engine_available: bool = False
 IntonationAnalyzer: Any = None
 TalkManager: Any = None
 generate_talk_events: Any = None
@@ -74,19 +74,15 @@ if TYPE_CHECKING:
 
 # 実行時のロード処理（定数再定義エラーを避けるため代入のみ行う）
 try:
-    from vo_se_engine import (
-        IntonationAnalyzer as RealIA,
-        TalkManager as RealTM,
-        generate_talk_events as RealGTE,
-    )
-    IntonationAnalyzer = RealIA
-    TalkManager = RealTM
-    generate_talk_events = RealGTE
-    _ENGINE_AVAILABLE = True
-except ImportError:
-    print("⚠️ vo_se_engine.py が見つかりません。TTS 機能は無効化されます。")
-    _ENGINE_AVAILABLE = False
-
+    # 実行時のインポート（絶対パスで指定するのがCIでは安全）
+    import vo_se_engine
+    IntonationAnalyzer = vo_se_engine.IntonationAnalyzer
+    TalkManager = vo_se_engine.TalkManager
+    generate_talk_events = vo_se_engine.generate_talk_events
+    engine_available = True
+except (ImportError, AttributeError):
+    print("⚠️ vo_se_engine.py not found.")
+    engine_available = False
 
 # ══════════════════════════════════════════════════════════════
 # 1. C++ 構造体バインディング（UTAU 対応フルセット）
