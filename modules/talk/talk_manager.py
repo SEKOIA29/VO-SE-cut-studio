@@ -386,7 +386,7 @@ class TalkManager(QObject):
                 # Pyright の Condition always True を防ぐため Any で受ける
                 result: Any = _pyopenjtalk.tts(text, **tts_args)
                 
-                if result:
+                if result is not None:
                     res_tuple = cast(Tuple[NDArray[Any], int], result)
                     return res_tuple[0], res_tuple[1]
             except Exception:
@@ -402,7 +402,7 @@ class TalkManager(QObject):
         """デフォルトボイスで TTS を実行する"""
         result: Any = _pyopenjtalk.tts(text, **options)
         
-        if result:
+        if result is not None:
             res_tuple = cast(Tuple[NDArray[Any], int], result)
             return res_tuple[0], res_tuple[1]
             
