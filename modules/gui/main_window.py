@@ -55,8 +55,7 @@ else:
 # VO-SE Engine — 型定義と動的ロードの分離
 # =================================================
 
-# エラー原因 1: _ENGINE_AVAILABLE を一度だけ宣言し、型を明示する
-engine_available: bool = False
+is_engine_available: bool = False
 IntonationAnalyzer: Any = None
 TalkManager: Any = None
 generate_talk_events: Any = None
@@ -80,9 +79,13 @@ try:
     TalkManager = vo_se_engine.TalkManager
     generate_talk_events = vo_se_engine.generate_talk_events
     engine_available = True
-except (ImportError, AttributeError):
-    print("⚠️ vo_se_engine.py not found.")
-    engine_available = False
+except Exception as e:
+    print(f"⚠️ VO-SE Engine integration failed: {e}")
+    is_engine_available = False
+    # フォールバック（Any で型チェックを黙らせる）
+    IntonationAnalyzer = Any
+    TalkManager = Any
+    generate_talk_events = Any
 
 # ══════════════════════════════════════════════════════════════
 # 1. C++ 構造体バインディング（UTAU 対応フルセット）
