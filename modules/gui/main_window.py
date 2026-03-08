@@ -52,16 +52,36 @@ else:
         TalkManager = Any
         generate_talk_events = Any
 # =================================================
-# VO-SE Engine — vo_se_engine.py からインポート
-# 同ディレクトリに vo_se_engine.py が必要
+# VO-SE Engine — 型定義と動的ロードの分離
 # =================================================
+
+# エラー原因 1: _ENGINE_AVAILABLE を一度だけ宣言し、型を明示する
 _ENGINE_AVAILABLE: bool = False
+IntonationAnalyzer: Any = None
+TalkManager: Any = None
+generate_talk_events: Any = None
+
+# TYPE_CHECKING ブロックは CI 時の型解決を助ける
+if TYPE_CHECKING:
+    from vo_se_engine import (
+        IntonationAnalyzer as _IA,
+        TalkManager as _TM,
+        generate_talk_events as _GTE,
+    )
+    IntonationAnalyzer = _IA
+    TalkManager = _TM
+    generate_talk_events = _GTE
+
+# 実行時のロード処理（定数再定義エラーを避けるため代入のみ行う）
 try:
     from vo_se_engine import (
-        IntonationAnalyzer,
-        TalkManager,
-        generate_talk_events,
+        IntonationAnalyzer as RealIA,
+        TalkManager as RealTM,
+        generate_talk_events as RealGTE,
     )
+    IntonationAnalyzer = RealIA
+    TalkManager = RealTM
+    generate_talk_events = RealGTE
     _ENGINE_AVAILABLE = True
 except ImportError:
     print("⚠️ vo_se_engine.py が見つかりません。TTS 機能は無効化されます。")
@@ -161,14 +181,14 @@ class VOSEBridge:
 
         NotesArray = NoteEvent * count
         c_notes = NotesArray()
-        self.keep_alive = []  # 前回の参照をクリア
+        self.keep_alive = []
 
         for i, data in enumerate(notes_list):
-            phoneme: str  = str(data.get("phoneme", "a"))
-            pitch:   list = list(data.get("pitch",   [150.0] * 50))
-            gender:  list = list(data.get("gender",  [0.5]   * 50))
-            tension: list = list(data.get("tension", [0.5]   * 50))
-            breath:  list = list(data.get("breath",  [0.1]   * 50))
+            phoneme: str = str(data.get("phoneme", "a"))
+            pitch: list[float] = list(data.get("pitch", [150.0] * 50))
+            gender: list[float] = list(data.get("gender", [0.5] * 50))
+            tension: list[float] = list(data.get("tension", [0.5] * 50))
+            breath: list[float] = list(data.get("breath", [0.1] * 50))
 
             # C 型に変換
             c_wav = phoneme.encode("utf-8")
