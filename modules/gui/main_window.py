@@ -31,13 +31,11 @@ from PySide6.QtGui import (
 
 
 # ══════════════════════════════════════════════════════════════
-# VO-SE Engine — 型定義と動的ロードの完全分離
+# VO-SE Engine — 型定義と動的ロード（修正版）
 # ══════════════════════════════════════════════════════════════
 
-# 1. フラグの初期化
 is_engine_available: bool = False
 
-# 2. 型チェック時のみ本物の型を読み込む
 if TYPE_CHECKING:
     from vo_se_engine import (
         IntonationAnalyzer,
@@ -45,10 +43,8 @@ if TYPE_CHECKING:
         generate_talk_events,
     )
 else:
-    # 3. 実行時は Any で初期化し、try-except で流し込む
     IntonationAnalyzer: Any = None
     TalkManager: Any = None
-    generate_talk_events: Any = None
 
     try:
         import vo_se_engine
@@ -58,11 +54,12 @@ else:
         is_engine_available = True
     except (ImportError, AttributeError) as e:
         print(f"⚠️ VO-SE Engine integration failed: {e}")
-        # インポート失敗時はクラスそのものを Any にして、
-        # 後続の処理で `TalkManager()` と呼び出しても落ちないようにする
+        # E731 回避: lambda ではなく def を使用
+        def generate_talk_events(*args, **kwargs) -> list[Any]:
+            return []
+            
         IntonationAnalyzer = type("IntonationAnalyzer", (object,), {})
         TalkManager = type("TalkManager", (object,), {})
-        generate_talk_events = lambda *args, **kwargs: []
         is_engine_available = False
 
 # ══════════════════════════════════════════════════════════════
@@ -332,8 +329,8 @@ class CutStudioMain(QMainWindow):
 
         # エンジン初期化
         self.bridge = VOSEBridge()
-        self.analyzer = IntonationAnalyzer() if _ENGINE_AVAILABLE else None
-        self.talk_manager = TalkManager() if _ENGINE_AVAILABLE else None
+        self.analyzer = IntonationAnalyzer() if is_engine_available else None
+        self.talk_manager = TalkManager() if is_engine_available else None
 
         # UI
         self.preview_stack = QStackedWidget()
@@ -424,7 +421,7 @@ class CutStudioMain(QMainWindow):
         if not text:
             return
 
-        if not _ENGINE_AVAILABLE or self.analyzer is None:
+        if not is_engine_available or self.analyzer is None:
             print("⚠️ vo_se_engine が利用できないため合成をスキップします。")
             return
 
