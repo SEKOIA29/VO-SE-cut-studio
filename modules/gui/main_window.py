@@ -30,62 +30,40 @@ from PySide6.QtGui import (
 
 
 
+# ══════════════════════════════════════════════════════════════
+# VO-SE Engine — 型定義と動的ロードの完全分離
+# ══════════════════════════════════════════════════════════════
+
+# 1. フラグの初期化
+is_engine_available: bool = False
+
+# 2. 型チェック時のみ本物の型を読み込む
 if TYPE_CHECKING:
-    # 型チェック時のみ読み込む（実行時には影響しない）
     from vo_se_engine import (
         IntonationAnalyzer,
         TalkManager,
         generate_talk_events,
     )
 else:
-    # 実行時は try-except で動的に読み込む
+    # 3. 実行時は Any で初期化し、try-except で流し込む
+    IntonationAnalyzer: Any = None
+    TalkManager: Any = None
+    generate_talk_events: Any = None
+
     try:
-        from vo_se_engine import (
-            IntonationAnalyzer,
-            TalkManager,
-            generate_talk_events,
-        )
-        _ENGINE_AVAILABLE = True
-    except ImportError:
-        _ENGINE_AVAILABLE = False
-        IntonationAnalyzer = Any # 型チェック回避用
-        TalkManager = Any
-        generate_talk_events = Any
-# =================================================
-# VO-SE Engine — 型定義と動的ロードの分離
-# =================================================
-
-is_engine_available: bool = False
-IntonationAnalyzer: Any = None
-TalkManager: Any = None
-generate_talk_events: Any = None
-
-# TYPE_CHECKING ブロックは CI 時の型解決を助ける
-if TYPE_CHECKING:
-    from vo_se_engine import (
-        IntonationAnalyzer as _IA,
-        TalkManager as _TM,
-        generate_talk_events as _GTE,
-    )
-    IntonationAnalyzer = _IA
-    TalkManager = _TM
-    generate_talk_events = _GTE
-
-# 実行時のロード処理（定数再定義エラーを避けるため代入のみ行う）
-try:
-    # 実行時のインポート（絶対パスで指定するのがCIでは安全）
-    import vo_se_engine
-    IntonationAnalyzer = vo_se_engine.IntonationAnalyzer
-    TalkManager = vo_se_engine.TalkManager
-    generate_talk_events = vo_se_engine.generate_talk_events
-    engine_available = True
-except Exception as e:
-    print(f"⚠️ VO-SE Engine integration failed: {e}")
-    is_engine_available = False
-    # フォールバック（Any で型チェックを黙らせる）
-    IntonationAnalyzer = Any
-    TalkManager = Any
-    generate_talk_events = Any
+        import vo_se_engine
+        IntonationAnalyzer = vo_se_engine.IntonationAnalyzer
+        TalkManager = vo_se_engine.TalkManager
+        generate_talk_events = vo_se_engine.generate_talk_events
+        is_engine_available = True
+    except (ImportError, AttributeError) as e:
+        print(f"⚠️ VO-SE Engine integration failed: {e}")
+        # インポート失敗時はクラスそのものを Any にして、
+        # 後続の処理で `TalkManager()` と呼び出しても落ちないようにする
+        IntonationAnalyzer = type("IntonationAnalyzer", (object,), {})
+        TalkManager = type("TalkManager", (object,), {})
+        generate_talk_events = lambda *args, **kwargs: []
+        is_engine_available = False
 
 # ══════════════════════════════════════════════════════════════
 # 1. C++ 構造体バインディング（UTAU 対応フルセット）
