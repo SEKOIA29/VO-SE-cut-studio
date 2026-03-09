@@ -1,4 +1,5 @@
 # main_window.py
+# main_window.py
 """
 # VO-SE Cut Studio — メインウィンドウ完全統合版
 # doc4 + doc5 + vo_se_engine.py を統合
@@ -12,7 +13,7 @@ import os
 import ctypes
 import platform
 import traceback
-from typing import Any, List, Dict, Optional, TYPE_CHECKING
+from typing import Any, List, Dict, Optional, Tuple, TYPE_CHECKING
 
 # =================================================
 # PySide6
@@ -28,24 +29,29 @@ from PySide6.QtGui import (
     QColor, QBrush, QPainter, QPen, QFont, QPaintEvent, QMouseEvent
 )
 
-
-
 # ══════════════════════════════════════════════════════════════
-# VO-SE Engine — 型定義と動的ロード（修正版）
+# VO-SE Engine — 型定義と動的ロード（Pyright完全対応版）
 # ══════════════════════════════════════════════════════════════
 
 is_engine_available: bool = False
 
 if TYPE_CHECKING:
-    from vo_se_engine import (
-        IntonationAnalyzer,
-        TalkManager,
-        generate_talk_events,
-    )
-else:
-    IntonationAnalyzer: Any = None
-    TalkManager: Any = None
+    # CI環境ではimportせず、Pyrightに構造だけを直接教え込む
+    class IntonationAnalyzer:
+        def __init__(self) -> None: ...
+        def analyze(self, text: str) -> str: ...
+        def analyze_to_phonemes(self, text: str) -> List[str]: ...
+        def analyze_to_accent_phrases(self, text: str) -> Any: ...
 
+    class TalkManager:
+        def __init__(self) -> None: ...
+        def set_voice(self, path: str) -> bool: ...
+        def synthesize(self, text: str, output_path: str, speed: float = 1.0) -> Tuple[bool, str]: ...
+
+    def generate_talk_events(text: str, analyzer: IntonationAnalyzer) -> List[Dict[str, Any]]: ...
+
+else:
+    # 実行環境での動的ロード
     try:
         import vo_se_engine
         IntonationAnalyzer = vo_se_engine.IntonationAnalyzer
@@ -54,8 +60,7 @@ else:
         is_engine_available = True
     except (ImportError, AttributeError) as e:
         print(f"⚠️ VO-SE Engine integration failed: {e}")
-        # E731 回避: lambda ではなく def を使用
-        def generate_talk_events(*args, **kwargs) -> list[Any]:
+        def generate_talk_events(*args: Any, **kwargs: Any) -> list[Any]:
             return []
             
         IntonationAnalyzer = type("IntonationAnalyzer", (object,), {})
@@ -72,20 +77,19 @@ class NoteEvent(ctypes.Structure):
     C++ 側の struct NoteEvent とメモリ配置を完全一致させること。
     """
     _fields_ = [
-        ("wav_path",           ctypes.c_char_p),
-        ("pitch_length",       ctypes.c_int),
-        ("pitch_curve",        ctypes.POINTER(ctypes.c_double)),
-        ("gender_curve",       ctypes.POINTER(ctypes.c_double)),
-        ("tension_curve",      ctypes.POINTER(ctypes.c_double)),
-        ("breath_curve",       ctypes.POINTER(ctypes.c_double)),
+        ("wav_path",          ctypes.c_char_p),
+        ("pitch_length",      ctypes.c_int),
+        ("pitch_curve",       ctypes.POINTER(ctypes.c_double)),
+        ("gender_curve",      ctypes.POINTER(ctypes.c_double)),
+        ("tension_curve",     ctypes.POINTER(ctypes.c_double)),
+        ("breath_curve",      ctypes.POINTER(ctypes.c_double)),
         # UTAU 互換パラメータ（oto.ini 対応）
-        ("offset_ms",          ctypes.c_double),   # 原音の開始位置
-        ("consonant_ms",       ctypes.c_double),   # 固定範囲（子音部）
-        ("cutoff_ms",          ctypes.c_double),   # 右ブランク
-        ("pre_utterance_ms",   ctypes.c_double),   # 先行発声
-        ("overlap_ms",         ctypes.c_double),   # オーバーラップ
+        ("offset_ms",         ctypes.c_double),   # 原音の開始位置
+        ("consonant_ms",      ctypes.c_double),   # 固定範囲（子音部）
+        ("cutoff_ms",         ctypes.c_double),   # 右ブランク
+        ("pre_utterance_ms",  ctypes.c_double),   # 先行発声
+        ("overlap_ms",        ctypes.c_double),   # オーバーラップ
     ]
-
 
 # ══════════════════════════════════════════════════════════════
 # 2. DLL/dylib ブリッジ
@@ -192,7 +196,6 @@ class VOSEBridge:
             print(f"🎬 Render complete: {output_file}")
         except Exception as e:
             print(f"❌ execute_render error: {e}\n{traceback.format_exc()}")
-
 
 # ══════════════════════════════════════════════════════════════
 # 3. UI コンポーネント
@@ -316,7 +319,6 @@ class PreviewView(QGraphicsView):
         text = scene.addText(label)
         text.setDefaultTextColor(QColor(200, 200, 200))
 
-
 # ══════════════════════════════════════════════════════════════
 # 4. メインウィンドウ
 # ══════════════════════════════════════════════════════════════
@@ -329,8 +331,10 @@ class CutStudioMain(QMainWindow):
 
         # エンジン初期化
         self.bridge = VOSEBridge()
-        self.analyzer = IntonationAnalyzer() if is_engine_available else None
-        self.talk_manager = TalkManager() if is_engine_available else None
+        
+        # Pyrightに型を明示して警告を消す
+        self.analyzer: Optional[IntonationAnalyzer] = IntonationAnalyzer() if is_engine_available else None
+        self.talk_manager: Optional[TalkManager] = TalkManager() if is_engine_available else None
 
         # UI
         self.preview_stack = QStackedWidget()
@@ -443,7 +447,6 @@ class CutStudioMain(QMainWindow):
                 print(f"❌ TTS 失敗: {result}")
 
         self.tts_input.clear()
-
 
 # ══════════════════════════════════════════════════════════════
 # エントリーポイント
