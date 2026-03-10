@@ -343,6 +343,12 @@ class CutStudioMain(QMainWindow):
         self._init_ui()
 
     def _init_ui(self) -> None:
+        self.analyzer: Optional[IntonationAnalyzer] = (
+            IntonationAnalyzer() if is_engine_available else None
+        )
+        self.talk_manager: Optional[TalkManager] = (
+            TalkManager() if is_engine_available else None
+        )
         central = QWidget()
         self.setCentralWidget(central)
         root_layout = QVBoxLayout(central)
