@@ -35,7 +35,7 @@ from PySide6.QtGui import (
 is_engine_available: bool = False
 
 if TYPE_CHECKING:
-    # CI環境ではimportせず、Pyrightに構造だけを直接教え込む
+    # Pyright (CI) 用のモック定義
     class IntonationAnalyzer:
         def __init__(self) -> None: ...
         def analyze(self, text: str) -> str: ...
@@ -52,7 +52,26 @@ if TYPE_CHECKING:
             speed: float = 1.0
         ) -> Tuple[bool, str]: ...
 
-    def generate_talk_events(text: str, analyzer: IntonationAnalyzer) -> List[Dict[str, Any]]: ...
+    def generate_talk_events(
+        text: str, 
+        analyzer: IntonationAnalyzer
+    ) -> List[Dict[str, Any]]: ...
+
+else:
+    # 実行環境での動的ロード
+    try:
+        from .vo_se_engine import (
+            IntonationAnalyzer,
+            TalkManager,
+            generate_talk_events
+        )
+    except (ImportError, AttributeError):
+        # エンジンがない場合のフォールバック
+        class IntonationAnalyzer: pass
+        class TalkManager: pass
+        def generate_talk_events(*args, **kwargs) -> list: return []
+
+__all__ = ["IntonationAnalyzer", "TalkManager", "generate_talk_events"]
 
 else:
     # 実行環境での動的ロード
