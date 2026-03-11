@@ -35,42 +35,64 @@ from PySide6.QtGui import (
 is_engine_available: bool = False
 
 if TYPE_CHECKING:
-    # Pyright (CI) 用のモック定義
+    # CI環境用モック定義
     class IntonationAnalyzer:
-        def __init__(self) -> None: ...
-        def analyze(self, text: str) -> str: ...
-        def analyze_to_phonemes(self, text: str) -> List[str]: ...
-        def analyze_to_accent_phrases(self, text: str) -> Any: ...
+        def __init__(self) -> None:
+            ...
+
+        def analyze(self, text: str) -> str:
+            ...
+
+        def analyze_to_phonemes(self, text: str) -> List[str]:
+            ...
+
+        def analyze_to_accent_phrases(self, text: str) -> Any:
+            ...
 
     class TalkManager:
-        def __init__(self) -> None: ...
-        def set_voice(self, path: str) -> bool: ...
+        def __init__(self) -> None:
+            ...
+
+        def set_voice(self, path: str) -> bool:
+            ...
+
         def synthesize(
             self,
             text: str,
             output_path: str,
             speed: float = 1.0
-        ) -> Tuple[bool, str]: ...
+        ) -> Tuple[bool, str]:
+            ...
 
     def generate_talk_events(
-        text: str, 
+        text: str,
         analyzer: IntonationAnalyzer
-    ) -> List[Dict[str, Any]]: ...
+    ) -> List[Dict[str, Any]]:
+        ...
 
 else:
     # 実行環境での動的ロード
     try:
-        from .vo_se_engine import (
-            IntonationAnalyzer,
-            TalkManager,
-            generate_talk_events
-        )
-    except (ImportError, AttributeError):
-        # エンジンがない場合のフォールバック
-        class IntonationAnalyzer: pass
-        class TalkManager: pass
-        def generate_talk_events(*args, **kwargs) -> list: return []
+        import vo_se_engine
+        IntonationAnalyzer = vo_se_engine.IntonationAnalyzer
+        TalkManager = vo_se_engine.TalkManager
+        generate_talk_events = vo_se_engine.generate_talk_events
+        is_engine_available = True
+    except (ImportError, AttributeError) as e:
+        print(f"⚠️ VO-SE Engine integration failed: {e}")
 
+        def generate_talk_events(*args: Any, **kwargs: Any) -> list[Any]:
+            return []
+
+        class IntonationAnalyzer:
+            pass
+
+        class TalkManager:
+            pass
+
+        is_engine_available = False
+
+# 外部公開用（if-elseの外に配置）
 __all__ = ["IntonationAnalyzer", "TalkManager", "generate_talk_events"]
 
 else:
@@ -355,7 +377,6 @@ class CutStudioMain(QMainWindow):
         # エンジン初期化
         self.bridge = VOSEBridge()
         
-        # Pyrightに型を明示して警告を消す（ここで括弧を使って改行します）
         self.analyzer: Optional[IntonationAnalyzer] = (
             IntonationAnalyzer() if is_engine_available else None
         )
