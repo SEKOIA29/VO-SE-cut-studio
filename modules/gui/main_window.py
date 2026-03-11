@@ -1,5 +1,4 @@
 # main_window.py
-
 """
 # VO-SE Cut Studio — メインウィンドウ
 """
@@ -94,6 +93,7 @@ else:
 
 # 外部公開用（if-elseの外に配置）
 __all__ = ["IntonationAnalyzer", "TalkManager", "generate_talk_events"]
+
 
 # ══════════════════════════════════════════════════════════════
 # 1. C++ 構造体バインディング（UTAU 対応フルセット）
@@ -359,7 +359,7 @@ class CutStudioMain(QMainWindow):
 
         # エンジン初期化
         self.bridge = VOSEBridge()
-        
+
         self.analyzer: Optional[IntonationAnalyzer] = (
             IntonationAnalyzer() if is_engine_available else None
         )
@@ -374,12 +374,6 @@ class CutStudioMain(QMainWindow):
         self._init_ui()
 
     def _init_ui(self) -> None:
-        self.analyzer: Optional[IntonationAnalyzer] = (
-            IntonationAnalyzer() if is_engine_available else None
-        )
-        self.talk_manager: Optional[TalkManager] = (
-            TalkManager() if is_engine_available else None
-        )
         central = QWidget()
         self.setCentralWidget(central)
         root_layout = QVBoxLayout(central)
