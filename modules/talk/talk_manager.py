@@ -15,7 +15,7 @@ import ctypes
 import platform
 import traceback
 from dataclasses import dataclass, field
-from typing import List, Dict, Any, Optional, Tuple, cast, Union
+from typing import List, Dict, Any, Optional, Tuple, cast, Union, TYPE_CHECKING
 
 import numpy as np
 from numpy.typing import NDArray
