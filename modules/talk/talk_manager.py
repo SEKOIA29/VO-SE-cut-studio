@@ -31,7 +31,7 @@ _sf: Any = sf
 if TYPE_CHECKING:
     # Pyright (CI) 用のモック定義：エンジンがなくても型を認識させる
     class IntonationAnalyzer:
-        def __init__(self) -> None:
+        def __init__(self) -> None: ...
             ...
 
         def analyze(self, text: str) -> str:
@@ -43,7 +43,7 @@ if TYPE_CHECKING:
         def analyze_to_accent_phrases(self, text: str) -> Any:
             ...
 
-    class TalkManager:
+    class EngineTalkManager:
         def __init__(self) -> None:
             ...
 
