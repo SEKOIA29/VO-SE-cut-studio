@@ -1,8 +1,7 @@
 # main_window.py
-# main_window.py
+
 """
-# VO-SE Cut Studio — メインウィンドウ完全統合版
-# doc4 + doc5 + vo_se_engine.py を統合
+# VO-SE Cut Studio — メインウィンドウ
 """
 # =================================================
 
@@ -337,9 +336,13 @@ class CutStudioMain(QMainWindow):
         # エンジン初期化
         self.bridge = VOSEBridge()
         
-        # Pyrightに型を明示して警告を消す
-        self.analyzer: Optional[IntonationAnalyzer] = IntonationAnalyzer() if is_engine_available else None
-        self.talk_manager: Optional[TalkManager] = TalkManager() if is_engine_available else None
+        # Pyrightに型を明示して警告を消す（ここで括弧を使って改行します）
+        self.analyzer: Optional[IntonationAnalyzer] = (
+            IntonationAnalyzer() if is_engine_available else None
+        )
+        self.talk_manager: Optional[TalkManager] = (
+            TalkManager() if is_engine_available else None
+        )
 
         # UI
         self.preview_stack = QStackedWidget()
