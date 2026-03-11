@@ -95,23 +95,6 @@ else:
 # 外部公開用（if-elseの外に配置）
 __all__ = ["IntonationAnalyzer", "TalkManager", "generate_talk_events"]
 
-else:
-    # 実行環境での動的ロード
-    try:
-        import vo_se_engine
-        IntonationAnalyzer = vo_se_engine.IntonationAnalyzer
-        TalkManager = vo_se_engine.TalkManager
-        generate_talk_events = vo_se_engine.generate_talk_events
-        is_engine_available = True
-    except (ImportError, AttributeError) as e:
-        print(f"⚠️ VO-SE Engine integration failed: {e}")
-        def generate_talk_events(*args: Any, **kwargs: Any) -> list[Any]:
-            return []
-            
-        IntonationAnalyzer = type("IntonationAnalyzer", (object,), {})
-        TalkManager = type("TalkManager", (object,), {})
-        is_engine_available = False
-
 # ══════════════════════════════════════════════════════════════
 # 1. C++ 構造体バインディング（UTAU 対応フルセット）
 # ══════════════════════════════════════════════════════════════
