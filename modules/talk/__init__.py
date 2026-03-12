@@ -34,7 +34,6 @@ else:
             generate_talk_events
         )
     except (ImportError, AttributeError):
-        # フォールバック定義（宣言形式を if ブロックと合わせる）
         class IntonationAnalyzer:
             pass
 
