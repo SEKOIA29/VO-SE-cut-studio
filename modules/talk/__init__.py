@@ -1,6 +1,6 @@
 # modules/talk/__init__.py
 from __future__ import annotations
-from typing import Any, List, Dict, Optional, Tuple, TYPE_CHECKING
+from typing import Any, List, Dict, Tuple, TYPE_CHECKING
 
 if TYPE_CHECKING:
     # Pyright (CI) 用のモック定義
