@@ -29,61 +29,41 @@ _sf: Any = sf
 
 
 if TYPE_CHECKING:
-    # Pyright (CI) 用のモック定義：エンジンがなくても型を認識させる
+    # Pyright (CI) 用のモック定義
     class IntonationAnalyzer:
         def __init__(self) -> None: ...
-            ...
-
-        def analyze(self, text: str) -> str:
-            ...
-
-        def analyze_to_phonemes(self, text: str) -> List[str]:
-            ...
-
-        def analyze_to_accent_phrases(self, text: str) -> Any:
-            ...
+        def analyze(self, text: str) -> str: ...
 
     class EngineTalkManager:
-        def __init__(self) -> None:
-            ...
-
-        def set_voice(self, path: str) -> bool:
-            ...
-
+        def __init__(self) -> None: ...
         def synthesize(
-            self,
-            text: str,
-            output_path: str,
-            speed: float = 1.0
-        ) -> Tuple[bool, str]:
-            ...
+            self, text: str, output_path: str, speed: float = 1.0
+        ) -> Tuple[bool, str]: ...
 
     def generate_talk_events(
-        text: str,
-        analyzer: IntonationAnalyzer
-    ) -> List[Dict[str, Any]]:
-        ...
+        text: str, analyzer: IntonationAnalyzer
+    ) -> List[Dict[str, Any]]: ...
 
 else:
     # 実行環境での動的ロード
     try:
         from .vo_se_engine import (
             IntonationAnalyzer,
-            TalkManager,
+            TalkManager as EngineTalkManager,
             generate_talk_events
         )
     except (ImportError, AttributeError):
-        # エンジンがない場合のフォールバック（開発環境やCIでのクラッシュ防止）
         class IntonationAnalyzer:
             pass
 
-        class TalkManager:
+        class EngineTalkManager:
             pass
 
         def generate_talk_events(*args: Any, **kwargs: Any) -> list[Any]:
             return []
 
-__all__ = ["IntonationAnalyzer", "TalkManager", "generate_talk_events"]
+# 外部公開用
+__all__ = ["IntonationAnalyzer", "EngineTalkManager", "generate_talk_events", "TalkManager"]
 
 
 # ══════════════════════════════════════════════════════════════
