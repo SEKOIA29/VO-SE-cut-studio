@@ -44,9 +44,14 @@ if TYPE_CHECKING:
     ) -> List[Dict[str, Any]]: ...
 
     # 2. Pyright に「IntonationAnalyzer は実は IntonationAnalyzer_T のことだ」と教える
-    IntonationAnalyzer = IntonationAnalyzer_T
-    EngineTalkManager = EngineTalkManager_T
-    generate_talk_events = generate_talk_events_T
+    IntonationAnalyzer: Any = IntonationAnalyzer_T
+    EngineTalkManager: Any = EngineTalkManager_T
+    
+    def _generate_talk_events_mock(
+        text: str, analyzer: Any
+    ) -> List[Dict[str, Any]]: ...
+        
+    generate_talk_events: Any = generate_talk_events_T
 
 else:
     # 実行環境での動的ロード
