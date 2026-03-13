@@ -27,22 +27,26 @@ from PySide6.QtCore import QObject
 _pyopenjtalk: Any = pyopenjtalk
 _sf: Any = sf
 
-
 if TYPE_CHECKING:
-    # Pyright (CI) 用のモック定義
-    class IntonationAnalyzer:
+    # 1. 型チェック専用の名前で定義（再宣言エラーを防ぐため末尾に _T を付与）
+    class IntonationAnalyzer_T:
         def __init__(self) -> None: ...
         def analyze(self, text: str) -> str: ...
 
-    class EngineTalkManager:
+    class EngineTalkManager_T:
         def __init__(self) -> None: ...
         def synthesize(
             self, text: str, output_path: str, speed: float = 1.0
         ) -> Tuple[bool, str]: ...
 
-    def generate_talk_events(
-        text: str, analyzer: IntonationAnalyzer
+    def generate_talk_events_T(
+        text: str, analyzer: IntonationAnalyzer_T
     ) -> List[Dict[str, Any]]: ...
+
+    # 2. Pyright に「IntonationAnalyzer は実は IntonationAnalyzer_T のことだ」と教える
+    IntonationAnalyzer = IntonationAnalyzer_T
+    EngineTalkManager = EngineTalkManager_T
+    generate_talk_events = generate_talk_events_T
 
 else:
     # 実行環境での動的ロード
