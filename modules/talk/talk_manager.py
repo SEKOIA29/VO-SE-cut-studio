@@ -21,12 +21,12 @@ import numpy as np
 from numpy.typing import NDArray
 import pyopenjtalk
 import soundfile as sf
+from PySide6.QtCore import QObject
 
 # --- Pyright 対策: 型情報を持たない外部ライブラリを Any にキャストして警告を抑制 ---
 _pyopenjtalk: Any = pyopenjtalk
 _sf: Any = sf
 
-from PySide6.QtCore import QObject
 
 
 # ══════════════════════════════════════════════════════════════
@@ -184,7 +184,7 @@ class IntonationAnalyzer:
 if not TYPE_CHECKING:
     try:
         from .vo_se_engine import (  # type: ignore[import-untyped]
-            TalkManager as EngineTalkManager,
+            TalkManager as _EngineTalkManager,
             generate_talk_events as _engine_generate_talk_events,
         )
         _has_engine = True
