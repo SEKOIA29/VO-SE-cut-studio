@@ -15,64 +15,18 @@ import ctypes
 import platform
 import traceback
 from dataclasses import dataclass, field
-from typing import List, Dict, Any, Optional, Tuple, cast, Union, TYPE_CHECKING
+from typing import List, Dict, Any, Optional, Tuple, cast, TYPE_CHECKING
 
 import numpy as np
 from numpy.typing import NDArray
 import pyopenjtalk
 import soundfile as sf
-from PySide6.QtCore import QObject
 
 # --- Pyright 対策: 型情報を持たない外部ライブラリを Any にキャストして警告を抑制 ---
 _pyopenjtalk: Any = pyopenjtalk
 _sf: Any = sf
 
-if TYPE_CHECKING:
-    # 1. 型チェック専用の名前で定義（再宣言エラーを防ぐため末尾に _T を付与）
-    class IntonationAnalyzer_T:
-        def __init__(self) -> None: ...
-        def analyze(self, text: str) -> str: ...
-
-    class EngineTalkManager_T:
-        def __init__(self) -> None: ...
-        def synthesize(
-            self, text: str, output_path: str, speed: float = 1.0
-        ) -> Tuple[bool, str]: ...
-
-    def generate_talk_events_T(
-        text: str, analyzer: IntonationAnalyzer_T
-    ) -> List[Dict[str, Any]]: ...
-
-    # 2. Pyright に「IntonationAnalyzer は実は IntonationAnalyzer_T のことだ」と教える
-    IntonationAnalyzer: Any = IntonationAnalyzer_T
-    EngineTalkManager: Any = EngineTalkManager_T
-    
-    def _generate_talk_events_mock(
-        text: str, analyzer: Any
-    ) -> List[Dict[str, Any]]: ...
-        
-    generate_talk_events: Any = generate_talk_events_T
-
-else:
-    # 実行環境での動的ロード
-    try:
-        from .vo_se_engine import (
-            IntonationAnalyzer,
-            TalkManager as EngineTalkManager,
-            generate_talk_events
-        )
-    except (ImportError, AttributeError):
-        class IntonationAnalyzer:
-            pass
-
-        class EngineTalkManager:
-            pass
-
-        def generate_talk_events(*args: Any, **kwargs: Any) -> list[Any]:
-            return []
-
-# 外部公開用
-__all__ = ["IntonationAnalyzer", "EngineTalkManager", "generate_talk_events", "TalkManager"]
+from PySide6.QtCore import QObject
 
 
 # ══════════════════════════════════════════════════════════════
@@ -82,6 +36,7 @@ __all__ = ["IntonationAnalyzer", "EngineTalkManager", "generate_talk_events", "T
 # Pyright の list[Unknown] エラーを防ぐための型付きファクトリ関数
 def _default_float_list() -> List[float]:
     return []
+
 
 @dataclass
 class AccentPhrase:
@@ -133,7 +88,6 @@ class IntonationAnalyzer:
         if not text:
             return []
         try:
-            # Pyright 対策: _pyopenjtalk 経由で呼び出し
             raw_phonemes = cast(str, _pyopenjtalk.g2p(text, kana=False))
             return [p for p in raw_phonemes.split() if p]
         except Exception as e:
@@ -163,7 +117,7 @@ class IntonationAnalyzer:
             features = cast(List[Dict[str, Any]], _pyopenjtalk.run_frontend(text))
         else:
             features = cast(List[Dict[str, Any]], _pyopenjtalk.extract_fullcontext(text))
-        
+
         return cast(List[str], _pyopenjtalk.make_label(features))
 
     def _parse_labels(self, labels: List[str]) -> List[AccentPhrase]:
@@ -224,7 +178,24 @@ class IntonationAnalyzer:
 
 
 # ══════════════════════════════════════════════════════════════
-# 3. トークイベント生成
+# 3. エンジン動的ロード（実行時のみ）
+# ══════════════════════════════════════════════════════════════
+
+if not TYPE_CHECKING:
+    try:
+        from .vo_se_engine import (  # type: ignore[import-untyped]
+            TalkManager as EngineTalkManager,
+            generate_talk_events as _engine_generate_talk_events,
+        )
+        _has_engine = True
+    except (ImportError, AttributeError):
+        _has_engine = False
+else:
+    _has_engine = False
+
+
+# ══════════════════════════════════════════════════════════════
+# 4. トークイベント生成
 # ══════════════════════════════════════════════════════════════
 
 def generate_accent_curve(phoneme: str, accent_pos: int = 0) -> List[float]:
@@ -239,8 +210,8 @@ def generate_talk_events(
     analyzer: IntonationAnalyzer,
 ) -> List[Dict[str, Any]]:
     """VO-SE エンジン用トークイベントリストを生成する"""
-    phonemes = analyzer.analyze_to_phonemes(text)
-    accent_phrases = analyzer.analyze_to_accent_phrases(text)
+    phonemes: List[str] = analyzer.analyze_to_phonemes(text)
+    accent_phrases: List[AccentPhrase] = analyzer.analyze_to_accent_phrases(text)
 
     accent_map: Dict[int, int] = {}
     idx = 0
@@ -272,7 +243,7 @@ def generate_talk_events(
 
 
 # ══════════════════════════════════════════════════════════════
-# 4. C++ 構造体バインディング
+# 5. C++ 構造体バインディング
 # ══════════════════════════════════════════════════════════════
 
 class NoteEvent(ctypes.Structure):
@@ -362,7 +333,7 @@ class VoseRendererBridge:
 
 
 # ══════════════════════════════════════════════════════════════
-# 5. 音声合成マネージャー
+# 6. 音声合成マネージャー
 # ══════════════════════════════════════════════════════════════
 
 class TalkManager(QObject):
@@ -406,13 +377,12 @@ class TalkManager(QObject):
 
             if x is None:
                 return False, "音声データの生成に失敗しました。"
-            
+
             if len(x) == 0:
                 return False, "生成された音声が空です。"
 
             x_int16 = np.clip(np.asarray(x), -32768, 32767).astype(np.int16)
-            
-            # Pyright 対策: _sf 経由で呼び出し
+
             _sf.write(output_path, x_int16, sr)
 
             return True, output_path
@@ -430,9 +400,8 @@ class TalkManager(QObject):
         for key in ("htsvoice", "font"):
             try:
                 tts_args = {**options, key: voice}
-                # Pyright の Condition always True を防ぐため Any で受ける
                 result: Any = _pyopenjtalk.tts(text, **tts_args)
-                
+
                 if result is not None:
                     res_tuple = cast(Tuple[NDArray[Any], int], result)
                     return res_tuple[0], res_tuple[1]
@@ -448,9 +417,21 @@ class TalkManager(QObject):
     ) -> Tuple[Optional[NDArray[Any]], int]:
         """デフォルトボイスで TTS を実行する"""
         result: Any = _pyopenjtalk.tts(text, **options)
-        
+
         if result is not None:
             res_tuple = cast(Tuple[NDArray[Any], int], result)
             return res_tuple[0], res_tuple[1]
-            
+
         return None, 48000
+
+
+# 外部公開用
+__all__ = [
+    "AccentPhrase",
+    "IntonationAnalyzer",
+    "NoteEvent",
+    "VoseRendererBridge",
+    "TalkManager",
+    "generate_accent_curve",
+    "generate_talk_events",
+]
