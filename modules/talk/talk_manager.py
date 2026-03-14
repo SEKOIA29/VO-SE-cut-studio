@@ -11,6 +11,7 @@ VO-SE Cut Studio — コアエンジン統合モジュール
 from __future__ import annotations
 
 import os
+import importlib.util
 import ctypes
 import platform
 import traceback
@@ -184,8 +185,8 @@ class IntonationAnalyzer:
 if not TYPE_CHECKING:
     try:
         from .vo_se_engine import (  # type: ignore[import-untyped]
-            TalkManager as _EngineTalkManager,
-            generate_talk_events as _engine_generate_talk_events,
+            TalkManager as _EngineTalkManager,  # noqa: F401
+            generate_talk_events as _engine_generate_talk_events,  # noqa: F401
         )
         _has_engine = True
     except (ImportError, AttributeError):
