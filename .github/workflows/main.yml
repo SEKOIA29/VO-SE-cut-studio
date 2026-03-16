@@ -31,6 +31,17 @@ jobs:
           cache: 'pip'
           cache-dependency-path: '**/requirements.txt'
 
+
+      - name: Install System Dependencies (macOS)
+        if: matrix.os == 'macos-latest'
+        run: brew install libsndfile
+
+      - name: Install System Dependencies (Windows)
+        if: matrix.os == 'windows-latest'
+        run: |
+          # SoundFileの依存関係は通常pipで入るが、
+          # DLLのロードに失敗する場合は、MSVC再配布可能パッケージ等の確認が必要
+
       - name: Install Hardened Dependencies
         shell: bash
         run: |
