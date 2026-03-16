@@ -130,6 +130,11 @@ jobs:
           
       - name: 🏁 Deep Integration Test (Headless)
         shell: bash
+        env:
+          PYTHONUTF8: 1          # 👈 これで絵文字エラー(UnicodeEncodeError)を回避
+          QT_QPA_PLATFORM: offscreen
+          # Pythonがカレントディレクトリやmodules/guiを優先的に探すように設定
+          PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/modules/gui
         run: |
           export QT_QPA_PLATFORM=offscreen
           printf "%s\n" \
