@@ -78,7 +78,7 @@ else:
         generate_talk_events = vo_se_engine.generate_talk_events
         is_engine_available = True
     except (ImportError, AttributeError) as e:
-        print(f"⚠️ VO-SE Engine integration failed: {e}")
+        print(f"VO-SE Engine integration failed: {e}")
 
         def generate_talk_events(*args: Any, **kwargs: Any) -> list[Any]:
             return []
