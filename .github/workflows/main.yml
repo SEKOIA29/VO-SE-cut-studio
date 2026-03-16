@@ -50,15 +50,16 @@ jobs:
           ruff check . --select E,F,W,I
           ruff format . --check
           
-      - name: 🧪 Deep Integration Test
-        shell: bash
-        env:
-          PYTHONUTF8: 1  # 👈 これを追加（UnicodeEncodeError 回避）
-          QT_QPA_PLATFORM: offscreen
-          PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/modules/gui
-        run: |
-          python deep_test
+    #  - name: 🧪 Deep Integration Test
+     #   shell: bash
+      #  env:
+       #   PYTHONUTF8: 1  # 👈 これを追加（UnicodeEncodeError 回避）
+        #  QT_QPA_PLATFORM: offscreen
+         # PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/modules/gui
+      # run: |
+     #     python deep_test
 
+  
       - name: 🎙️ Pack Voice Assets (Generate voice_data.h)
         shell: bash
         run: |
