@@ -9,6 +9,15 @@
 
 #include <stdint.h>
 
+#include <cstdint> 
+
+// ディスクキャッシュの先頭に書き込むヘッダ情報
+struct VoseCacheHeader {
+    uint32_t magic;     // 'VOSE' (0x45534F56) かどうかを確認するマジックナンバー
+    int length;         // フレーム数
+    int spec_bins;      // 周波数ビン数
+};
+
 // --- GUI（Python）とやり取りするための構造体 ---
 // 64bit/32bit環境でサイズが変わらないよう、アライメントを厳密に制御します
 
