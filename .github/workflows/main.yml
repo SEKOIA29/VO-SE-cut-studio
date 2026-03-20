@@ -139,36 +139,34 @@ jobs:
 
           echo "✅ Build complete: $OUT"
           
-      - name: 🛠️ Native Core Compilation (Recursive Build)
+      - name: 🛠️ Native Core Compilation (Recursive & Flattened)
         shell: bash
         run: |
           mkdir -p bin obj
 
-          # 1. src 以下のすべての .cpp と .c を再帰的に取得（重要！）
+          # 1. すべてのソースファイルを再帰的に取得
           SOURCES=$(find src -name "*.cpp" -o -name "*.c")
           
-          # 2. すべてのサブディレクトリをインクルードパスに追加
-          INCLUDE_PATHS=$(find src -type d | sed 's/^/-I /')
+          # 2. すべてのディレクトリをインクルードパスに追加し、'tr' で改行をスペースに変換
+          # これにより、すべてのパスが一行の引数としてコンパイラに正しく渡されます
+          ALL_INC_DIRS=$(find src include -type d | sed 's/^/-I /' | tr '\n' ' ')
           
           echo "--- 🔍 Compiling following sources ---"
           echo "$SOURCES"
+          echo "--- 📂 Flattened Include Paths ---"
+          echo "$ALL_INC_DIRS"
 
           if [ "${{ matrix.os }}" = "macos-latest" ]; then
-            # macOS 用のリンク設定
-            # -undefined dynamic_lookup を使う手もありますが、
-            # 基本は全オブジェクトをリンクするのが正解です
             clang++ -std=c++17 -shared -fPIC \
               $SOURCES \
-              $INCLUDE_PATHS \
-              -I include \
+              $ALL_INC_DIRS \
               -O3 -o bin/libvo_se_cut.dylib \
               -framework Foundation
           else
-            # Windows (MinGW) 用
+            # Windows (MinGW)
             g++ -std=c++17 -shared -fPIC \
               $SOURCES \
-              $INCLUDE_PATHS \
-              -I include \
+              $ALL_INC_DIRS \
               -O3 -o bin/libvo_se_cut.dll \
               -Wl,--out-implib,bin/libvo_se_cut.a
           fi
