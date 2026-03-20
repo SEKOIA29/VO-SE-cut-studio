@@ -139,42 +139,39 @@ jobs:
 
           echo "✅ Build complete: $OUT"
           
-      - name: 🏁 Deep Integration Test (Headless)
+      - name: 🛠️ Native Core Compilation (Recursive Build)
         shell: bash
-        env:
-          PYTHONUTF8: 1          # 👈 これで絵文字エラー(UnicodeEncodeError)を回避
-          QT_QPA_PLATFORM: offscreen
-          # Pythonがカレントディレクトリやmodules/guiを優先的に探すように設定
-          PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/modules/gui
         run: |
-          export QT_QPA_PLATFORM=offscreen
-          printf "%s\n" \
-            "import sys, os, ctypes" \
-            "sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath('.')), 'modules', 'gui'))" \
-            "sys.path.insert(0, os.path.abspath('modules/gui'))" \
-            "print('sys.path:', sys.path[:3])" \
-            "from PySide6.QtWidgets import QApplication" \
-            "from PySide6.QtCore import QTimer" \
-            "print(f'Platform: {sys.platform}')" \
-            "try:" \
-            "    lib_name = 'libvo_se_cut.' + ('dll' if sys.platform=='win32' else 'dylib')" \
-            "    lib_path = os.path.abspath(os.path.join('bin', lib_name))" \
-            "    if os.path.exists(lib_path):" \
-            "        ctypes.CDLL(lib_path)" \
-            "        print('SUCCESS: Core Library Loaded')" \
-            "    else:" \
-            "        print(f'WARNING: Core Library not found at {lib_path}')" \
-            "    app = QApplication(sys.argv)" \
-            "    from main_window import CutStudioMain" \
-            "    window = CutStudioMain()" \
-            "    print('SUCCESS: GUI Classes Initialized')" \
-            "    QTimer.singleShot(500, lambda: (print('Event Loop Test OK'), app.quit()))" \
-            "    sys.exit(app.exec())" \
-            "except Exception as e:" \
-            "    print(f'CRITICAL FAILURE: {e}')" \
-            "    import traceback; traceback.print_exc()" \
-            "    sys.exit(1)" > deep_test.py
-          python deep_test.py
+          mkdir -p bin obj
+
+          # 1. src 以下のすべての .cpp と .c を再帰的に取得（重要！）
+          SOURCES=$(find src -name "*.cpp" -o -name "*.c")
+          
+          # 2. すべてのサブディレクトリをインクルードパスに追加
+          INCLUDE_PATHS=$(find src -type d | sed 's/^/-I /')
+          
+          echo "--- 🔍 Compiling following sources ---"
+          echo "$SOURCES"
+
+          if [ "${{ matrix.os }}" = "macos-latest" ]; then
+            # macOS 用のリンク設定
+            # -undefined dynamic_lookup を使う手もありますが、
+            # 基本は全オブジェクトをリンクするのが正解です
+            clang++ -std=c++17 -shared -fPIC \
+              $SOURCES \
+              $INCLUDE_PATHS \
+              -I include \
+              -O3 -o bin/libvo_se_cut.dylib \
+              -framework Foundation
+          else
+            # Windows (MinGW) 用
+            g++ -std=c++17 -shared -fPIC \
+              $SOURCES \
+              $INCLUDE_PATHS \
+              -I include \
+              -O3 -o bin/libvo_se_cut.dll \
+              -Wl,--out-implib,bin/libvo_se_cut.a
+          fi
 
       # --- 4. パッケージング (PyInstaller) ---
       - name: 📦 Final Packaging
