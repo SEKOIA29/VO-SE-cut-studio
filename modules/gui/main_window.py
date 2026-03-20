@@ -17,10 +17,9 @@ from typing import Any, List, Dict, Optional, Tuple, TYPE_CHECKING
 # PySide6
 # =================================================
 from PySide6.QtWidgets import (
-    QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
-    QSplitter, QTextEdit, QPushButton, QLabel, QListWidget,
+    QApplication, QMainWindow, QWidget, QVBoxLayout, QSplitter, QTextEdit, QPushButton, QLabel, QListWidget,
     QFrame, QStackedWidget, QGraphicsView, QGraphicsScene,
-    QGraphicsTextItem, QScrollBar,
+    QScrollBar,
 )
 from PySide6.QtCore import Qt, QRect, QPoint, Signal
 from PySide6.QtGui import (
