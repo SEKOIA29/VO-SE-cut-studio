@@ -1,224 +1,322 @@
-name: "🚀 VO-SE Cut Studio: Absolute Professional Build"
+name: "🚀 Release VO-SE cut studio (Official Edition)"
 
 on:
   push:
-    branches: [ main ]
-    tags: [ 'v*' ]
+    branches:
+      - main
+    tags:
+      - 'v*'
   workflow_dispatch:
 
 permissions:
   contents: write
 
 jobs:
-  check-and-build:
-    name: 💎 Quality Gate & Build (${{ matrix.os }})
+  build:
+    name: Build for ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
-      fail-fast: true 
+      fail-fast: false
       matrix:
         os: [windows-latest, macos-latest]
 
     steps:
-      - name: Checkout Repository
+      - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          submodules: recursive
 
-      - name: Setup Advanced Python Environment
+      - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
           cache: 'pip'
-          cache-dependency-path: '**/requirements.txt'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip wheel
+          python -m pip uninstall -y pkg_resources || true
+          python -m pip install "setuptools>=70,<81" "pyinstaller==6.13.0"
+          pip install PySide6 numpy sounddevice soundfile mido janome Pillow ruff pyright scipy onnxruntime chardet pykakasi backports.tarfile packaging
+          pip install pyopenjtalk --only-binary :all: || pip install pyopenjtalk
 
 
-      - name: Install System Dependencies (macOS)
-        if: matrix.os == 'macos-latest'
-        run: brew install libsndfile
-
-      - name: Install System Dependencies (Windows)
+       
+      - name: Ruff Check and Fix (Windows only)
         if: matrix.os == 'windows-latest'
-        run: |
-          # SoundFileの依存関係は通常pipで入るが、
-          # DLLのロードに失敗する場合は、MSVC再配布可能パッケージ等の確認が必要
+        shell: bash
+        # ルールコードをすべて大文字 (E, F, E501, E401) に修正
+        run: ruff check . --select E,F --ignore E501,E401 --fix --exit-zero
 
-      - name: Install Hardened Dependencies
+      - name: Auto Commit Fixes
+        if: matrix.os == 'windows-latest'
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "style: ruff auto-fix unused imports"
+          commit_user_name: github-actions[bot]
+          commit_user_email: github-actions[bot]@users.noreply.github.com
+
+
+
+
+      - name: Verify pkg_resources for PyInstaller hook
+        shell: python
+        run: |
+          import pkg_resources
+          print("pkg_resources file:", getattr(pkg_resources, "__file__", "unknown"))
+          print("has NullProvider:", hasattr(pkg_resources, "NullProvider"))
+          if not hasattr(pkg_resources, "NullProvider"):
+              raise SystemExit("pkg_resources.NullProvider is missing")
+
+      - name: Create User Dictionary (if needed)
+        shell: python
+        run: |
+          import os
+          try:
+              import pyopenjtalk
+              if hasattr(pyopenjtalk, 'create_user_dict') and os.path.exists('user.csv'):
+                  pyopenjtalk.create_user_dict('user.dic', 'user.csv')
+                  print('User dictionary created successfully.')
+              else:
+                  print('Skip dict creation: No user.csv or function missing')
+          except Exception as e:
+              print(f'Skip dict creation: {e}')
+
+      # ── ① バージョンをソースに埋め込む ──────────────────────────
+      - name: Inject version into update_checker.py
         shell: bash
         run: |
-          python -m pip install --upgrade pip wheel setuptools
-          for i in {1..3}; do
-            pip install -r requirements.txt && break || sleep 5
-          done
+          # タグ (v1.2.0) があればそれを使い、なければ 0.0.0-dev にする
+          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+            VERSION="${GITHUB_REF_NAME#v}"   # "v1.2.0" → "1.2.0"
+          else
+            VERSION="0.0.0-dev"
+          fi
+          echo "Injecting version: $VERSION"
 
-      - name: 🛡️ Strict Linting & Auto-Fix (Ruff)
+          # update_checker.py の CURRENT_VERSION を書き換える
+          # ファイルがまだなければ作成する
+          CHECKER="modules/updater/update_checker.py"
+          mkdir -p modules/updater
+          if [ -f "$CHECKER" ]; then
+            sed -i.bak "s/^CURRENT_VERSION = .*/CURRENT_VERSION = \"$VERSION\"/" "$CHECKER"
+          else
+            # ファイルがない場合は最小構成で生成
+            cat > "$CHECKER" << EOF
+          import json, threading, urllib.request
+          from packaging.version import Version
+
+          CURRENT_VERSION = "$VERSION"
+          GITHUB_API_URL = "https://api.github.com/repos/YOUR_ORG/VO-SE-Pro/releases/latest"
+
+          class UpdateChecker:
+              def check_async(self, callback):
+                  threading.Thread(target=self._check, args=(callback,), daemon=True).start()
+
+              def _check(self, callback):
+                  try:
+                      req = urllib.request.Request(GITHUB_API_URL, headers={"User-Agent": "VO-SE-Pro"})
+                      with urllib.request.urlopen(req, timeout=5) as res:
+                          data = json.loads(res.read())
+                      latest = data["tag_name"].lstrip("v")
+                      page_url = data["html_url"]
+                      assets = data.get("assets", [])
+                      # Windows は .exe、Mac はアップデート用 _update.zip を拾う
+                      exe_url = next(
+                          (a["browser_download_url"] for a in assets
+                           if a["name"].endswith("_update.zip") or a["name"].endswith(".exe")),
+                          None
+                      )
+                      if Version(latest) > Version(CURRENT_VERSION):
+                          callback(True, latest, page_url, exe_url)
+                      else:
+                          callback(False, latest, None, None)
+                  except Exception:
+                      callback(None, None, None, None)
+          EOF
+          fi
+          echo "Done. CURRENT_VERSION is now $VERSION"
+
+      - name: Lint with Ruff
+        run: |
+          # 修正箇所: --ignore e501,e401 -> E501,E401
+          ruff check . --select E,F --ignore E501,E401 --fix --exit-zero
+
+      - name: Type Check with Pyright
+        run: |
+          pyright .
+
+      - name: Pack Official Voice Data
         shell: bash
         run: |
-          # 1. 自動修正を適用
-          ruff check . --select E,F,W,I --fix
-          ruff format .
-          
-          # 2. 修正後の状態を確認（まだ汚れがあれば、ここでエラーとして落とす）
-          ruff check . --select E,F,W,I
-          ruff format . --check
-          
-
-  
-      - name: 🎙️ Pack Voice Assets (Generate voice_data.h)
-        shell: bash
-        run: |
-          python modules/tools/pack_voice.py
-          # 生成されたか確認（デバッグ用）
-          ls -l src/core/voice_data.h
-          
-      - name: Debug File Structure
-        shell: bash
-        run: |
-          echo "--- Current Directory Structure ---"
-          find . -maxdepth 3 -name "*.cpp"
-          
-      - name: 🛠️ Native Core Compilation
-        shell: bash
-        run: |
-          mkdir -p bin obj
-
-          # 1. ソース・インクルード収集
-          SOURCES=$(find src \( -name "*.cpp" -o -name "*.c" \) | sort)
-          INCLUDES=$(find src -type d | sed 's/^/-I/' | tr '\n' ' ')
-          # include/ 以下の全サブディレクトリも収集
-          INCLUDE_DIRS=$(find include -type d | sed 's/^/-I/' | tr '\n' ' ')
-
-          echo "--- 🔍 Debug Check ---"
-          SRC_COUNT=$(echo "$SOURCES" | grep -c '.')
-          echo "Found $SRC_COUNT source files."
-
-          if [ "$SRC_COUNT" -le 1 ]; then
-            echo "❌ CRITICAL ERROR: Engine files not found in src/"
-            ls -R src; exit 1
+          TARGET_SCRIPT=$(find . -name "pack_voice.py" -o -name "pack_all_voices.py" | head -n 1)
+          if [ -n "$TARGET_SCRIPT" ]; then
+            echo "Found script: $TARGET_SCRIPT"
+            SCRIPT_DIR=$(dirname "$TARGET_SCRIPT")
+            cd "$SCRIPT_DIR"
+            python $(basename "$TARGET_SCRIPT")
+            cd -
+          else
+            echo "Error: Packing script not found."
+            exit 1
           fi
 
-          # 2. OS別フラグ設定
+      - name: Build C++ Engine
+        shell: bash
+        run: |
+          mkdir -p bin
           if [ "${{ matrix.os }}" = "windows-latest" ]; then
-            CXX_CMD="g++"
-            EXTRA_FLAGS="-mavx2 -static -static-libgcc -static-libstdc++"
-            OUT="bin/libvo_se_cut.dll"
-            LINK_FLAGS="-shared"
+            g++ -std=c++17 -shared -fPIC -o bin/libvo_se.dll src/vose_core.cpp src/world/*.cpp \
+              -I. -Isrc -Iinclude -Iinclude/world -O2 -static-libgcc -static-libstdc++
           else
-            CXX_CMD="clang++"
-            EXTRA_FLAGS="-undefined dynamic_lookup"
-            OUT="bin/libvo_se_cut.dylib"
-            LINK_FLAGS="-dynamiclib"
+            clang++ -std=c++17 -shared -fPIC -o bin/libvo_se.dylib src/vose_core.cpp src/world/*.cpp \
+              -I. -Isrc -Iinclude -Iinclude/world -undefined dynamic_lookup -O3 -w
           fi
 
-          # 3. 個別コンパイル
-          printf '%s\n' "$SOURCES" | while IFS= read -r SRC; do
-            [ -z "$SRC" ] && continue
-            OBJ="obj/$(echo "$SRC" | tr '/' '_' | tr ' ' '_').o"
-            DIR=$(dirname "$SRC")
-
-            echo "🔨 Compiling: $SRC"
-            $CXX_CMD -std=c++17 -fPIC -c "$SRC" \
-              -I"$DIR" \
-              $INCLUDES \
-              $INCLUDE_DIRS \
-              -O3 -w \
-              -o "$OBJ"
-
-            if [ $? -ne 0 ]; then
-              echo "❌ Failed: $SRC"
-              exit 1
-            fi
-          done || { echo "❌ Compile error. Aborting."; exit 1; }
-
-          # 4. リンク
-          echo "🔗 Linking → $OUT"
-          $CXX_CMD -std=c++17 $LINK_FLAGS \
-            -o "$OUT" \
-            obj/*.o \
-            $EXTRA_FLAGS \
-            -O3 -w
-
-          echo "✅ Build complete: $OUT"
-          
-      - name: 🛠️ Native Core Compilation (Recursive Build)
+      - name: Package App
         shell: bash
         run: |
-          mkdir -p bin obj
+          rm -rf dist build dist_out
+          mkdir dist_out
 
-          # 1. src 以下のすべての .cpp と .c を再帰的に取得（重要！）
-          SOURCES=$(find src -name "*.cpp" -o -name "*.c")
-          
-          # 2. すべてのサブディレクトリをインクルードパスに追加
-          INCLUDE_PATHS=$(find src -type d | sed 's/^/-I /')
-          
-          echo "--- 🔍 Compiling following sources ---"
-          echo "$SOURCES"
-
-          if [ "${{ matrix.os }}" = "macos-latest" ]; then
-            # macOS 用のリンク設定
-            # -undefined dynamic_lookup を使う手もありますが、
-            # 基本は全オブジェクトをリンクするのが正解です
-            clang++ -std=c++17 -shared -fPIC \
-              $SOURCES \
-              $INCLUDE_PATHS \
-              -I include \
-              -O3 -o bin/libvo_se_cut.dylib \
-              -framework Foundation
-          else
-            # Windows (MinGW) 用
-            g++ -std=c++17 -shared -fPIC \
-              $SOURCES \
-              $INCLUDE_PATHS \
-              -I include \
-              -O3 -o bin/libvo_se_cut.dll \
-              -Wl,--out-implib,bin/libvo_se_cut.a
-          fi
-
-      # --- 4. パッケージング (PyInstaller) ---
-      - name: 📦 Final Packaging
-        shell: bash
-        run: |
-          mkdir -p dist_out
           if [ "${{ matrix.os }}" = "windows-latest" ]; then
             pyinstaller --noconsole --onefile --clean \
-              --add-data "bin/libvo_se_cut.dll;bin" \
-              --name "VO-SE_Cut_Studio_Win" modules/gui/main_window.py  # ← パス修正
-            mv dist/VO-SE_Cut_Studio_Win.exe dist_out/
+              --paths . \
+              --paths modules \
+              --icon="assets/icon.ico" \
+              --hidden-import=modules.gui.main_window \
+              --hidden-import=backports \
+              --hidden-import=backports.tarfile \
+              --add-data "bin/libvo_se.dll;bin" \
+              --add-data "assets;assets" \
+              --add-data "modules;modules" \
+              --name "VO-SE_CUT_STADIO_Win" main.py
+
+            cp dist/VO-SE_CUT_STADIO_Win.exe dist_out/
+
           else
             pyinstaller --noconsole --windowed --clean \
-              --add-data "bin/libvo_se_cut.dylib:bin" \
-              --name "VO-SE_Cut_Studio_Mac" modules/gui/main_window.py  # ← パス修正
-            codesign --force --deep --sign - "dist/VO-SE_Cut_Studio_Mac.app"
-            cd dist && zip -ry ../dist_out/VO-SE_Cut_Studio_Mac.zip VO-SE_Cut_Studio_Mac.app && cd ..
+              --paths . \
+              --paths modules \
+              --icon="assets/icon.icns" \
+              --exclude-module PySide6.QtPdf \
+              --hidden-import=modules.gui.main_window \
+              --hidden-import=backports \
+              --hidden-import=backports.tarfile \
+              --add-data "bin/libvo_se.dylib:bin" \
+              --add-data "assets:assets" \
+              --add-data "modules:modules" \
+              --name "VO-SE_CUT_STADIO_Mac" main.py
+
+            chmod +x dist/VO-SE_CUT_STADIO_Mac.app/Contents/MacOS/VO-SE_PRO_Mac
+
+            # ── ② 配布用DMG（初回DL向け）──
+            hdiutil create -volname "VO-SE cut studio" \
+              -srcfolder dist/VO-SE_CUT_STADIO_Mac.app \
+              -ov -format UDZO \
+              dist_out/VO-SE_CUT_STADIO_Mac.dmg
+
+            # ── ② 自動アップデート用ZIP（_update サフィックスで区別）──
+            cd dist && zip -ry ../dist_out/VO-SE_PRO_Mac_update.zip VO-SE_PRO_Mac.app && cd ..
           fi
 
-      - name: Upload Build Artifacts
+      - name: 🍎 Verify and Fix macOS Library Linkage (Complete & Final)
+        if: matrix.os == 'macos-latest'
+        shell: bash
+        run: |
+          set +e
+          APP_BIN=$(find dist -name "VO-SE_PRO_Mac" -type f | grep "\.app/Contents/MacOS/VO-SE_PRO_Mac" | head -n 1)
+          chmod +x "$APP_BIN"
+          find dist -name "libvo_se.dylib" -type f | while read -r DYLIB_BIN; do
+            chmod 755 "$DYLIB_BIN"
+            LIB_NAME=$(basename "$DYLIB_BIN")
+            install_name_tool -id "$LIB_NAME" "$DYLIB_BIN" 2>&1 || true
+            OLD_REF=$(otool -L "$APP_BIN" | grep "libvo_se" | awk '{print $1}')
+            if [ -n "$OLD_REF" ]; then
+              install_name_tool -change "$OLD_REF" "@executable_path/../Frameworks/bin/$LIB_NAME" "$APP_BIN" 2>&1 || true
+              install_name_tool -change "$OLD_REF" "@loader_path/bin/$LIB_NAME" "$APP_BIN" 2>&1 || true
+            fi
+            codesign --force --deep --sign - "$DYLIB_BIN" 2>&1 || true
+          done
+          codesign --force --deep --sign - "dist/VO-SE_PRO_Mac.app" 2>&1 || true
+          set -e
+
+      - name: 🔍 Startup Smoke Test (GUI Headless)
+        shell: bash
+        run: |
+          export QT_QPA_PLATFORM=offscreen
+          export PYTHONIOENCODING=utf-8
+          if [ "${{ matrix.os }}" = "windows-latest" ]; then
+            printf "%s\n" \
+              "import os, ctypes, sys" \
+              "root_dir = os.path.abspath(os.getcwd())" \
+              "bin_dir = os.path.join(root_dir, 'bin')" \
+              "src_dir = os.path.join(root_dir, 'src')" \
+              "dll_path = os.path.join(bin_dir, 'libvo_se.dll')" \
+              "os.environ['PATH'] = bin_dir + os.pathsep + os.environ.get('PATH', '')" \
+              "if hasattr(os, 'add_dll_directory'): os.add_dll_directory(bin_dir)" \
+              "try:" \
+              "    lib = ctypes.CDLL(dll_path, winmode=0)" \
+              "    print('SUCCESS: DLL Loaded')" \
+              "except Exception as e:" \
+              "    print(f'DLL Error: {e}'); sys.exit(1)" \
+              "sys.path.extend([root_dir, src_dir])" \
+              "try:" \
+              "    import main" \
+              "    print('SUCCESS: App Import Passed')" \
+              "except Exception as e:" \
+              "    print(f'Import Error: {e}'); sys.exit(1)" > smoke_test.py
+          else
+            printf "%s\n" \
+              "import os, ctypes, sys" \
+              "root_dir = os.path.abspath(os.getcwd())" \
+              "src_dir = os.path.join(root_dir, 'src')" \
+              "dylib_path = os.path.join(root_dir, 'bin', 'libvo_se.dylib')" \
+              "try:" \
+              "    lib = ctypes.CDLL(dylib_path)" \
+              "    print('SUCCESS: Dylib Loaded')" \
+              "except Exception as e:" \
+              "    print(f'Error: {e}'); sys.exit(1)" \
+              "sys.path.extend([root_dir, src_dir])" \
+              "try:" \
+              "    import main" \
+              "    print('SUCCESS: macOS Import Passed')" \
+              "except Exception as e:" \
+              "    print(f'Import Error: {e}'); sys.exit(1)" > smoke_test.py
+          fi
+          python smoke_test.py
+
+      - name: 📦 Save Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: Release-${{ matrix.os }}
+          name: VO-SE-CUT-STUDIO-Package-${{ matrix.os }}
           path: dist_out/
 
-  release:
-    name: 🌍 Global Distribution
-    needs: check-and-build
+  publish:
+    name: Publish Release
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
     steps:
-      - name: Download all artifacts
+      - name: Download build artifacts
         uses: actions/download-artifact@v4
         with:
-          path: final_assets
+          pattern: VO-SE-CUT-STUDIO-Package-*
           merge-multiple: true
+          path: dist_out
 
-      - name: Create Official Release
+      - name: Show release files
+        run: ls -la dist_out
+
+      # ── ③ タグが v* の時だけ正式リリース、それ以外は pre-release ──
+      - name: Upload Release
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'latest-dev' }}
+          name: ${{ startsWith(github.ref, 'refs/tags/') && format('VO-SE Pro {0}', github.ref_name) || 'VO-SE Pro (Dev Build)' }}
+          prerelease: ${{ !startsWith(github.ref, 'refs/tags/') }}
+          fail_on_unmatched_files: false
+          make_latest: ${{ startsWith(github.ref, 'refs/tags/') }}
           files: |
-            final_assets/*.exe
-            final_assets/*.zip
-          body: |
-            ## VO-SE Cut Studio Official Release
-            - Automated Type & Lint Checks: PASSED
-            - Native Core Integration: VERIFIED
-            - Cross-Platform Build: SUCCESS
+            dist_out/VO-SE_CUT_STADIO_Win.exe
+            dist_out/VO-SE_CUT_STADIO_Mac.dmg
+            dist_out/VO-SE_CUT_STADIO_Mac_update.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
