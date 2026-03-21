@@ -60,6 +60,16 @@ jobs:
           # 2. 修正後の状態を確認（まだ汚れがあれば、ここでエラーとして落とす）
           ruff check . --select E,F,W,I
           ruff format . --check
+
+      - name: Lint with Ruff
+        run: |
+          # 修正箇所: --ignore e501,e401 -> E501,E401
+          ruff check . --select E,F --ignore E501,E401 --fix --exit-zero
+
+      - name: Type Check with Pyright
+        run: |
+          pyright .
+
           
 
   
