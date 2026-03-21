@@ -19,13 +19,15 @@ from typing import Any, List, Dict, Optional, Tuple, TYPE_CHECKING
 # PySide6
 # =================================================
 from PySide6.QtWidgets import (
-    QApplication, QMainWindow, QWidget, QVBoxLayout, QSplitter, QTextEdit, QPushButton, QLabel, QListWidget,
-    QFrame, QStackedWidget, QGraphicsView, QGraphicsScene,
-    QScrollBar,
+    QApplication, QMainWindow, QWidget, QVBoxLayout, QSplitter, QTextEdit, 
+    QPushButton, QLabel, QListWidget, QFrame, QStackedWidget, 
+    QGraphicsView, QGraphicsScene, QScrollBar,
+    QGraphicsPixmapItem # ← 追加
 )
 from PySide6.QtCore import Qt, QRect, QPoint, Signal
 from PySide6.QtGui import (
-    QColor, QBrush, QPainter, QPen, QFont, QPaintEvent, QMouseEvent
+    QColor, QBrush, QPainter, QPen, QFont, QPaintEvent, QMouseEvent,
+    QPixmap # ← 追加
 )
 
 # ══════════════════════════════════════════════════════════════
@@ -423,39 +425,50 @@ class TimelineWidget(QWidget):
         layout.addWidget(self.h_scrollbar)
 
 class PreviewView(QGraphicsView):
+    """プレビューエリア（画像表示・移動対応）"""
+
     def __init__(self, label: str = "Preview") -> None:
         super().__init__()
         self.scene = QGraphicsScene()
         self.setScene(self.scene)
         self.setBackgroundBrush(QBrush(QColor(30, 30, 30)))
         self.setRenderHint(QPainter.RenderHint.Antialiasing)
-        self.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform) # ラスターを綺麗に
+        # ラスター画像を拡大してもボケにくくする
+        self.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform)
         
-        # キャンバスサイズ（1920x1080想定）
+        # 1920x1080の仮想キャンバス
         self.scene.setSceneRect(0, 0, 1920, 1080)
         self.centerOn(960, 540)
         
-        # 背景枠
+        # 編集領域の枠線
         self.scene.addRect(self.scene.sceneRect(), QPen(QColor(60, 60, 60)))
         
         self.current_character: Optional[QGraphicsPixmapItem] = None
+        # デバッグ用テキスト
+        self.debug_text = self.scene.addText(label)
+        self.debug_text.setDefaultTextColor(QColor(100, 100, 100))
 
-    def add_character(self, image_path: str):
-        """画像をプレビューに追加する"""
+    def add_character(self, image_path: str) -> None:
+        """画像をプレビューに追加し、マウス操作を有効にする"""
         pixmap = QPixmap(image_path)
         if pixmap.isNull():
+            print(f"❌ 画像の読み込みに失敗: {image_path}")
             return
             
-        # 既存のを消すか、レイヤーとして重ねるか
+        # アイテム作成
         item = QGraphicsPixmapItem(pixmap)
+        # 移動と選択を可能にするフラグ
         item.setFlags(
             QGraphicsPixmapItem.GraphicsItemFlag.ItemIsMovable |
             QGraphicsPixmapItem.GraphicsItemFlag.ItemIsSelectable
         )
-        # 中央に配置
+        
+        # 画面中央付近に配置
         item.setPos(960 - pixmap.width()/2, 540 - pixmap.height()/2)
+        
         self.scene.addItem(item)
         self.current_character = item
+        print(f"✅ キャラクタ表示成功: {image_path}")
 
 # ══════════════════════════════════════════════════════════════
 # 4. メインウィンドウ
@@ -591,9 +604,13 @@ class CutStudioMain(QMainWindow):
         start_x = self.timeline.header.playhead_x
 
         # 4. トラックへ追加
-        self.timeline.voice_track.add_clip(start_x, clip_width, f"Voice: {text[:10]}...")
-        self.timeline.video_track.add_clip(start_x, clip_width, f"Text: {text}", color=QColor(60, 179, 113, 200))
-
+        self.timeline.voice_track.add_clip(
+            start_x, clip_width, f"Voice: {text[:10]}..."
+        )
+        self.timeline.video_track.add_clip(
+            start_x, clip_width, f"Text: {text}", 
+            color=QColor(60, 179, 113, 200)
+        )
         # 5. 再生ヘッドを次の入力位置へ自動で進める
         self.timeline.header._update_playhead(start_x + clip_width)
 
