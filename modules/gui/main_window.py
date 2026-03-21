@@ -1,4 +1,5 @@
 # main_window.py
+
 """
 # VO-SE Cut Studio — メインウィンドウ
 """
@@ -6,6 +7,7 @@
 
 from __future__ import annotations
 
+import wave
 import sys
 import os
 import ctypes
@@ -523,47 +525,47 @@ class CutStudioMain(QMainWindow):
         self.btn_video.setChecked(index == 0)
         self.btn_motion.setChecked(index == 1)
         
+
     def _on_generate_clicked(self) -> None:
         text = self.tts_input.toPlainText().strip()
         if not text:
             return
 
-        # 1. 音声合成（既存処理）
         print(f"🎙️ 合成開始: {text}")
         
-        # 本来は wav の長さを取得すべきですが、
-        # いったん「文字数 × 0.2秒」で仮の長さを計算します
-        duration_sec = max(1.0, len(text) * 0.2)
-        clip_width = int(duration_sec * 100) # 1秒100px
-        
-        # 現在の再生ヘッド位置を取得（TimelineHeaderから）
+        # 1. 音声合成の実行（TalkManager で WAVを書き出す）
+        wav_filename = "output_tts.wav"
+        if self.talk_manager:
+            ok, _ = self.talk_manager.synthesize(text, wav_filename)
+            if not ok:
+                print("❌ TTS合成に失敗しました")
+                return
+
+        # 2. 生成されたWAVから正確な秒数を計算
+        # デフォルトは 1秒=100px
+        clip_width = 200 # 失敗時のフォールバック
+        try:
+            with wave.open(wav_filename, 'rb') as wr:
+                duration = wr.getnframes() / float(wr.getframerate())
+                clip_width = int(duration * 100)
+        except Exception as e:
+            print(f"⚠️ WAV解析エラー: {e}")
+
+        # 3. タイムラインの現在の位置（再生ヘッド）を取得
         start_x = self.timeline.header.playhead_x
 
-        # 2. タイムラインへ自動配置
-        # VOICEトラックに音声クリップ
-        self.timeline.voice_track.add_clip(
-            x=start_x, 
-            width=clip_width, 
-            text=f"Voice: {text[:10]}...", 
-            color=QColor(70, 130, 180, 200) # 青
-        )
+        # 4. トラックへ追加
+        self.timeline.voice_track.add_clip(start_x, clip_width, f"Voice: {text[:10]}...")
+        self.timeline.video_track.add_clip(start_x, clip_width, f"Text: {text}", color=QColor(60, 179, 113, 200))
 
-        # VIDEOトラックにテロップクリップ（同じ位置に配置）
-        self.timeline.video_track.add_clip(
-            x=start_x, 
-            width=clip_width, 
-            text=f"Text: {text}", 
-            color=QColor(60, 179, 113, 200) # 緑
-        )
-
-        # 3. 再生ヘッドをクリップの終端へ移動（連続入力しやすくするため）
+        # 5. 再生ヘッドを次の入力位置へ自動で進める
         self.timeline.header._update_playhead(start_x + clip_width)
 
-        # エンジンでの物理レンダリング（実際に出力）
+        # (オプション) C++ エンジン側での高品質レンダリングも並行
         if is_engine_available and self.analyzer:
             notes = generate_talk_events(text, self.analyzer)
             if notes:
-                self.bridge.render(notes, output_file="output.wav")
+                self.bridge.render(notes, output_file="output_rendered.wav")
 
         self.tts_input.clear()
 
