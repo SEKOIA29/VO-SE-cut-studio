@@ -95,6 +95,20 @@ else:
 # 外部公開用（if-elseの外に配置）
 __all__ = ["IntonationAnalyzer", "TalkManager", "generate_talk_events"]
 
+def get_wav_duration_px(file_path: str, px_per_sec: int = 100) -> int:
+    """WAVファイルの正確な長さをピクセルに変換する"""
+    if not os.path.exists(file_path):
+        return 200 # ファイルがない場合のデフォルト
+    try:
+        with wave.open(file_path, 'rb') as wr:
+            frames = wr.getnframes()
+            rate = wr.getframerate()
+            duration = frames / float(rate)
+            return int(duration * px_per_sec)
+    except Exception as e:
+        print(f"Error reading WAV: {e}")
+        return 200
+
 
 # ══════════════════════════════════════════════════════════════
 # 1. C++ 構造体バインディング（UTAU 対応フルセット）
