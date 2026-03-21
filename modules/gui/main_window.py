@@ -293,10 +293,35 @@ class TimelineTrack(QFrame):
         self.setFixedHeight(60)
         self.setStyleSheet("background-color: #2a2a2a; border: 1px solid #3f3f3f;")
         self.track_name = name
+        self.dragging_clip_idx: Optional[int] = None
+        self.drag_start_offset: int = 0
+        self.setMouseTracking(True)
         
         # クリップ情報を保持するリスト
         # 各要素は {"x": 開始位置, "width": 長さ, "text": 表示文字, "color": QColor}
         self.clips: List[Dict[str, Any]] = []
+
+    def mousePressEvent(self, event: QMouseEvent) -> None:
+        header_width = 100
+        x = event.position().x() - header_width
+        
+        # 逆順でチェック（重なっている場合、上のものを掴む）
+        for i, clip in enumerate(reversed(self.clips)):
+            idx = len(self.clips) - 1 - i
+            if clip["x"] <= x <= clip["x"] + clip["width"]:
+                self.dragging_clip_idx = idx
+                self.drag_start_offset = x - clip["x"]
+                break
+
+    def mouseMoveEvent(self, event: QMouseEvent) -> None:
+        if self.dragging_clip_idx is not None:
+            header_width = 100
+            new_x = event.position().x() - header_width - self.drag_start_offset
+            self.clips[self.dragging_clip_idx]["x"] = max(0, int(new_x))
+            self.update()
+
+    def mouseReleaseEvent(self, event: QMouseEvent) -> None:
+        self.dragging_clip_idx = None
 
     def add_clip(
         self, x: int, width: int, text: str, color: QColor = QColor(70, 130, 180, 200)
