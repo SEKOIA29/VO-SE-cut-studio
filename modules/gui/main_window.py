@@ -293,14 +293,51 @@ class TimelineTrack(QFrame):
         self.setFixedHeight(60)
         self.setStyleSheet("background-color: #2a2a2a; border: 1px solid #3f3f3f;")
         self.track_name = name
+        
+        # クリップ情報を保持するリスト
+        # 各要素は {"x": 開始位置, "width": 長さ, "text": 表示文字, "color": QColor}
+        self.clips: List[Dict[str, Any]] = []
+
+    def add_clip(self, x: int, width: int, text: str, color: QColor = QColor(70, 130, 180, 200)) -> None:
+        """クリップをトラックに追加する"""
+        self.clips.append({
+            "x": x,
+            "width": width,
+            "text": text,
+            "color": color
+        })
+        self.update() # 再描画をトリガー
 
     def paintEvent(self, event: QPaintEvent) -> None:
         super().paintEvent(event)
         painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+
+        # 1. トラックヘッダー（左側の名前部分）の描画
+        header_width = 100
+        painter.fillRect(QRect(0, 0, header_width, 60), QColor(45, 45, 45))
         painter.setPen(QColor(180, 180, 180))
         painter.setFont(QFont("Segoe UI", 9, QFont.Weight.Bold))
-        painter.fillRect(QRect(0, 0, 100, 60), QColor(45, 45, 45))
         painter.drawText(10, 35, self.track_name)
+
+        # 2. クリップ（素材の箱）の描画
+        # ヘッダー分 (100px) をオフセットとして右にずらして描画
+        for clip in self.clips:
+            clip_rect = QRect(header_width + clip["x"], 10, clip["width"], 40)
+            
+            # 箱の背景
+            painter.setBrush(clip["color"])
+            painter.setPen(QPen(clip["color"].lighter(120), 1))
+            painter.drawRoundedRect(clip_rect, 4, 4)
+
+            # 箱の中のテキスト
+            painter.setPen(Qt.GlobalColor.white)
+            painter.setFont(QFont("Segoe UI", 8))
+            # はみ出さないようにクリッピングして描画
+            painter.drawText(clip_rect.adjusted(5, 0, -5, 0), 
+                             Qt.AlignmentFlag.AlignCenter | Qt.AlignmentFlag.ElideRight, 
+                             clip["text"])
+        
         painter.end()
 
 
@@ -310,7 +347,7 @@ class TimelineWidget(QWidget):
     def __init__(self, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
         self._init_ui()
-
+        
     def _init_ui(self) -> None:
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -318,19 +355,27 @@ class TimelineWidget(QWidget):
 
         self.header = TimelineHeader()
 
+        # スクロールエリアの代わり（簡易版）
         self.scroll_content = QWidget()
-        tracks_layout = QVBoxLayout(self.scroll_content)
-        tracks_layout.setContentsMargins(0, 0, 0, 0)
-        tracks_layout.setSpacing(1)
-        tracks_layout.addWidget(TimelineTrack("🎙️ VOICE"))
-        tracks_layout.addWidget(TimelineTrack("🎬 VIDEO"))
-        tracks_layout.addWidget(TimelineTrack("🦴 MOTION"))
-        tracks_layout.addStretch()
+        self.tracks_layout = QVBoxLayout(self.scroll_content)
+        self.tracks_layout.setContentsMargins(0, 0, 0, 0)
+        self.tracks_layout.setSpacing(1)
 
-        self.h_scrollbar = QScrollBar(Qt.Orientation.Horizontal)
+        # ★ トラックを保持（後でここに追加するため）
+        self.voice_track = TimelineTrack("🎙️ VOICE")
+        self.video_track = TimelineTrack("🎬 VIDEO")
+        self.motion_track = TimelineTrack("🦴 MOTION")
+
+        self.tracks_layout.addWidget(self.voice_track)
+        self.tracks_layout.addWidget(self.video_track)
+        self.tracks_layout.addWidget(self.motion_track)
+        self.tracks_layout.addStretch()
 
         layout.addWidget(self.header)
         layout.addWidget(self.scroll_content)
+        
+        # 水平スクロールバー（将来的に実装）
+        self.h_scrollbar = QScrollBar(Qt.Orientation.Horizontal)
         layout.addWidget(self.h_scrollbar)
 
 
@@ -449,32 +494,48 @@ class CutStudioMain(QMainWindow):
         self.preview_stack.setCurrentIndex(index)
         self.btn_video.setChecked(index == 0)
         self.btn_motion.setChecked(index == 1)
-
+        
     def _on_generate_clicked(self) -> None:
         text = self.tts_input.toPlainText().strip()
         if not text:
             return
 
-        if not is_engine_available or self.analyzer is None:
-            print("⚠️ vo_se_engine が利用できないため合成をスキップします。")
-            return
-
+        # 1. 音声合成（既存処理）
         print(f"🎙️ 合成開始: {text}")
+        
+        # 本来は wav の長さを取得すべきですが、
+        # いったん「文字数 × 0.2秒」で仮の長さを計算します
+        duration_sec = max(1.0, len(text) * 0.2)
+        clip_width = int(duration_sec * 100) # 1秒100px
+        
+        # 現在の再生ヘッド位置を取得（TimelineHeaderから）
+        start_x = self.timeline.header.playhead_x
 
-        # 1. トークイベント生成（音素 → NoteEvent リスト）
-        notes = generate_talk_events(text, self.analyzer)
+        # 2. タイムラインへ自動配置
+        # VOICEトラックに音声クリップ
+        self.timeline.voice_track.add_clip(
+            x=start_x, 
+            width=clip_width, 
+            text=f"Voice: {text[:10]}...", 
+            color=QColor(70, 130, 180, 200) # 青
+        )
 
-        # 2. C++ レンダリング（VO-SE エンジン）
-        if notes:
-            self.bridge.render(notes, output_file="output.wav")
+        # VIDEOトラックにテロップクリップ（同じ位置に配置）
+        self.timeline.video_track.add_clip(
+            x=start_x, 
+            width=clip_width, 
+            text=f"Text: {text}", 
+            color=QColor(60, 179, 113, 200) # 緑
+        )
 
-        # 3. TalkManager で WAV を保存（pyopenjtalk 経由）
-        if self.talk_manager:
-            ok, result = self.talk_manager.synthesize(text, "output_tts.wav")
-            if ok:
-                print(f"✅ TTS 保存完了: {result}")
-            else:
-                print(f"❌ TTS 失敗: {result}")
+        # 3. 再生ヘッドをクリップの終端へ移動（連続入力しやすくするため）
+        self.timeline.header._update_playhead(start_x + clip_width)
+
+        # エンジンでの物理レンダリング（実際に出力）
+        if is_engine_available and self.analyzer:
+            notes = generate_talk_events(text, self.analyzer)
+            if notes:
+                self.bridge.render(notes, output_file="output.wav")
 
         self.tts_input.clear()
 
