@@ -22,12 +22,12 @@ from PySide6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QSplitter, QTextEdit, 
     QPushButton, QLabel, QListWidget, QFrame, QStackedWidget, 
     QGraphicsView, QGraphicsScene, QScrollBar,
-    QGraphicsPixmapItem # ← 追加
+    QGraphicsPixmapItem 
 )
 from PySide6.QtCore import Qt, QRect, QPoint, Signal
 from PySide6.QtGui import (
     QColor, QBrush, QPainter, QPen, QFont, QPaintEvent, QMouseEvent,
-    QPixmap # ← 追加
+    QPixmap 
 )
 
 # ══════════════════════════════════════════════════════════════
