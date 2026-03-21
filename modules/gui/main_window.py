@@ -298,7 +298,10 @@ class TimelineTrack(QFrame):
         # 各要素は {"x": 開始位置, "width": 長さ, "text": 表示文字, "color": QColor}
         self.clips: List[Dict[str, Any]] = []
 
-    def add_clip(self, x: int, width: int, text: str, color: QColor = QColor(70, 130, 180, 200)) -> None:
+    def add_clip(
+        self, x: int, width: int, text: str, color: QColor = QColor(70, 130, 180, 200)
+    ) -> None:
+
         """クリップをトラックに追加する"""
         self.clips.append({
             "x": x,
