@@ -422,18 +422,40 @@ class TimelineWidget(QWidget):
         self.h_scrollbar = QScrollBar(Qt.Orientation.Horizontal)
         layout.addWidget(self.h_scrollbar)
 
-
 class PreviewView(QGraphicsView):
-    """プレビューエリア（FFmpeg 出力 / ボーンオーバーレイ）"""
-
     def __init__(self, label: str = "Preview") -> None:
         super().__init__()
-        scene = QGraphicsScene()
-        self.setScene(scene)
+        self.scene = QGraphicsScene()
+        self.setScene(self.scene)
         self.setBackgroundBrush(QBrush(QColor(30, 30, 30)))
         self.setRenderHint(QPainter.RenderHint.Antialiasing)
-        text = scene.addText(label)
-        text.setDefaultTextColor(QColor(200, 200, 200))
+        self.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform) # ラスターを綺麗に
+        
+        # キャンバスサイズ（1920x1080想定）
+        self.scene.setSceneRect(0, 0, 1920, 1080)
+        self.centerOn(960, 540)
+        
+        # 背景枠
+        self.scene.addRect(self.scene.sceneRect(), QPen(QColor(60, 60, 60)))
+        
+        self.current_character: Optional[QGraphicsPixmapItem] = None
+
+    def add_character(self, image_path: str):
+        """画像をプレビューに追加する"""
+        pixmap = QPixmap(image_path)
+        if pixmap.isNull():
+            return
+            
+        # 既存のを消すか、レイヤーとして重ねるか
+        item = QGraphicsPixmapItem(pixmap)
+        item.setFlags(
+            QGraphicsPixmapItem.GraphicsItemFlag.ItemIsMovable |
+            QGraphicsPixmapItem.GraphicsItemFlag.ItemIsSelectable
+        )
+        # 中央に配置
+        item.setPos(960 - pixmap.width()/2, 540 - pixmap.height()/2)
+        self.scene.addItem(item)
+        self.current_character = item
 
 # ══════════════════════════════════════════════════════════════
 # 4. メインウィンドウ
