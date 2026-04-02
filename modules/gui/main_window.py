@@ -301,6 +301,15 @@ class TimelineHeader(QWidget):
         self.update()
         self.positionChanged.emit(self.playhead_x)
 
+    def set_playhead(self, x: int) -> None:
+        """外部から再生ヘッドの位置を更新する（Pyrightのprivateアクセスエラー対策）"""
+        self._update_playhead(x)
+
+    def _update_playhead(self, x: int) -> None:
+        self.playhead_x = max(0, min(x, self.width()))
+        self.update()
+        self.positionChanged.emit(self.playhead_x)
+
 
 class TimelineTrack(QFrame):
     """タイムラインの各トラック（音声・動画・モーション）"""
@@ -371,20 +380,20 @@ class TimelineTrack(QFrame):
         for clip in self.clips:
             clip_rect = QRect(header_width + clip["x"], 10, clip["width"], 40)
             
-            # 箱の背景
             painter.setBrush(clip["color"])
             painter.setPen(QPen(clip["color"].lighter(120), 1))
             painter.drawRoundedRect(clip_rect, 4, 4)
 
-            # 箱の中のテキスト
             painter.setPen(Qt.GlobalColor.white)
             painter.setFont(QFont("Segoe UI", 8))
-            # はみ出さないようにクリッピングして描画
-            painter.drawText(clip_rect.adjusted(5, 0, -5, 0), 
-                             Qt.AlignmentFlag.AlignCenter | Qt.AlignmentFlag.ElideRight, 
-                             clip["text"])
-        
-        painter.end()
+            
+            # 修正ポイント: AlignmentFlag と TextElideMode は別物
+            # ここでは単純に中央揃えを指定。省略が必要な場合は QFontMetrics を使用します
+            painter.drawText(
+                clip_rect.adjusted(5, 0, -5, 0), 
+                Qt.AlignmentFlag.AlignCenter, 
+                clip["text"]
+            )
 
 
 class TimelineWidget(QWidget):
@@ -612,7 +621,7 @@ class CutStudioMain(QMainWindow):
             color=QColor(60, 179, 113, 200)
         )
         # 5. 再生ヘッドを次の入力位置へ自動で進める
-        self.timeline.header._update_playhead(start_x + clip_width)
+        self.timeline.header.set_playhead(start_x + clip_width)
 
         # (オプション) C++ エンジン側での高品質レンダリングも並行
         if is_engine_available and self.analyzer:
