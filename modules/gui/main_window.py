@@ -305,7 +305,7 @@ class TimelineHeader(QWidget):
         """外部から再生ヘッドの位置を更新する（Pyrightのprivateアクセスエラー対策）"""
         self._update_playhead(x)
 
-    def _update_playhead(self, x: int) -> None:
+    def _apply_playhead_update(self, x: int) -> None:
         self.playhead_x = max(0, min(x, self.width()))
         self.update()
         self.positionChanged.emit(self.playhead_x)
@@ -432,30 +432,33 @@ class TimelineWidget(QWidget):
         # 水平スクロールバー（将来的に実装）
         self.h_scrollbar = QScrollBar(Qt.Orientation.Horizontal)
         layout.addWidget(self.h_scrollbar)
-
+        
 class PreviewView(QGraphicsView):
     """プレビューエリア（画像表示・移動対応）"""
 
     def __init__(self, label: str = "Preview") -> None:
         super().__init__()
-        self.scene = QGraphicsScene()
-        self.setScene(self.scene)
+        
+        # 修正ポイント: self.scene ではなく self._scene_obj に変更
+        self._scene_obj = QGraphicsScene()
+        self.setScene(self._scene_obj)
+        
         self.setBackgroundBrush(QBrush(QColor(30, 30, 30)))
         self.setRenderHint(QPainter.RenderHint.Antialiasing)
-        # ラスター画像を拡大してもボケにくくする
         self.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform)
         
         # 1920x1080の仮想キャンバス
-        self.scene.setSceneRect(0, 0, 1920, 1080)
+        self._scene_obj.setSceneRect(0, 0, 1920, 1080)
         self.centerOn(960, 540)
         
         # 編集領域の枠線
-        self.scene.addRect(self.scene.sceneRect(), QPen(QColor(60, 60, 60)))
+        self._scene_obj.addRect(self._scene_obj.sceneRect(), QPen(QColor(60, 60, 60)))
         
         self.current_character: Optional[QGraphicsPixmapItem] = None
-        # デバッグ用テキスト
-        self.debug_text = self.scene.addText(label)
-        self.debug_text.setDefaultTextColor(QColor(100, 100, 100))
+        
+        # デバッグ用テキスト (変数名も一応変更)
+        self.debug_item = self._scene_obj.addText(label)
+        self.debug_item.setDefaultTextColor(QColor(100, 100, 100))
 
     def add_character(self, image_path: str) -> None:
         """画像をプレビューに追加し、マウス操作を有効にする"""
@@ -475,7 +478,7 @@ class PreviewView(QGraphicsView):
         # 画面中央付近に配置
         item.setPos(960 - pixmap.width()/2, 540 - pixmap.height()/2)
         
-        self.scene.addItem(item)
+        self._scene_obj.addItem(item)
         self.current_character = item
         print(f"✅ キャラクタ表示成功: {image_path}")
 
