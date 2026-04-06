@@ -1,0 +1,99 @@
+/* 基本設定 */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: "SF Pro JP", "SF Pro Display", "SF Pro Icons", "Helvetica Neue", "Helvetica", "Arial", sans-serif;
+}
+
+body {
+    background-color: #fff;
+    color: #1d1d1f;
+}
+
+/* ナビゲーション */
+.global-nav {
+    position: fixed;
+    top: 0;
+    width: 100%;
+    height: 44px;
+    background: rgba(251, 251, 253, 0.8);
+    backdrop-filter: blur(20px);
+    z-index: 9999;
+}
+
+.nav-content {
+    max-width: 1000px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: 100%;
+    padding: 0 22px;
+}
+
+.nav-content a {
+    text-decoration: none;
+    color: #000;
+    font-size: 12px;
+    opacity: 0.8;
+    transition: opacity 0.3s;
+}
+
+.nav-content a:hover {
+    opacity: 1;
+}
+
+/* ヒーローセクション共通 */
+.hero {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding-top: 100px;
+    text-align: center;
+    background-size: cover;
+    background-position: center;
+    margin-bottom: 12px;
+}
+
+.hero-text h1 {
+    font-size: 56px;
+    font-weight: 600;
+    letter-spacing: -0.005em;
+}
+
+.hero-text h2 {
+    font-size: 28px;
+    font-weight: 400;
+    margin-top: 6px;
+}
+
+.cta {
+    margin-top: 18px;
+}
+
+.cta .link {
+    font-size: 21px;
+    color: #0066cc;
+    text-decoration: none;
+    margin: 0 15px;
+}
+
+.cta .link:hover {
+    text-decoration: underline;
+}
+
+/* 個別セクションの色・背景（仮） */
+.iphone-15-pro {
+    background-color: #f5f5f7;
+}
+
+.macbook-air {
+    background-color: #000;
+}
+
+.dark {
+    color: #fff;
+}
