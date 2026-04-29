@@ -1,7 +1,7 @@
 # main_window.py
 
 """
-# VO-SE Cut Studio — メインウィンドウ
+# VO-SE Cut Studio — メインウィンドウ（動画編集専用）
 """
 # =================================================
 
@@ -19,15 +19,15 @@ from typing import Any, List, Dict, Optional, Tuple, TYPE_CHECKING
 # PySide6
 # =================================================
 from PySide6.QtWidgets import (
-    QApplication, QMainWindow, QWidget, QVBoxLayout, QSplitter, QTextEdit, 
-    QPushButton, QLabel, QListWidget, QFrame, QStackedWidget, 
+    QApplication, QMainWindow, QWidget, QVBoxLayout, QSplitter, QTextEdit,
+    QPushButton, QLabel, QListWidget, QFrame,
     QGraphicsView, QGraphicsScene, QScrollBar,
-    QGraphicsPixmapItem 
+    QGraphicsPixmapItem
 )
 from PySide6.QtCore import Qt, QRect, QPoint, Signal
 from PySide6.QtGui import (
     QColor, QBrush, QPainter, QPen, QFont, QPaintEvent, QMouseEvent,
-    QPixmap 
+    QPixmap
 )
 
 # ══════════════════════════════════════════════════════════════
@@ -37,43 +37,20 @@ from PySide6.QtGui import (
 is_engine_available: bool = False
 
 if TYPE_CHECKING:
-    # CI環境用モック定義
     class IntonationAnalyzer:
-        def __init__(self) -> None:
-            ...
-
-        def analyze(self, text: str) -> str:
-            ...
-
-        def analyze_to_phonemes(self, text: str) -> List[str]:
-            ...
-
-        def analyze_to_accent_phrases(self, text: str) -> Any:
-            ...
+        def __init__(self) -> None: ...
+        def analyze(self, text: str) -> str: ...
+        def analyze_to_phonemes(self, text: str) -> List[str]: ...
+        def analyze_to_accent_phrases(self, text: str) -> Any: ...
 
     class TalkManager:
-        def __init__(self) -> None:
-            ...
+        def __init__(self) -> None: ...
+        def set_voice(self, path: str) -> bool: ...
+        def synthesize(self, text: str, output_path: str, speed: float = 1.0) -> Tuple[bool, str]: ...
 
-        def set_voice(self, path: str) -> bool:
-            ...
-
-        def synthesize(
-            self,
-            text: str,
-            output_path: str,
-            speed: float = 1.0
-        ) -> Tuple[bool, str]:
-            ...
-
-    def generate_talk_events(
-        text: str,
-        analyzer: IntonationAnalyzer
-    ) -> List[Dict[str, Any]]:
-        ...
+    def generate_talk_events(text: str, analyzer: IntonationAnalyzer) -> List[Dict[str, Any]]: ...
 
 else:
-    # 実行環境での動的ロード
     try:
         import vo_se_engine
         IntonationAnalyzer = vo_se_engine.IntonationAnalyzer
@@ -94,13 +71,13 @@ else:
 
         is_engine_available = False
 
-# 外部公開用（if-elseの外に配置）
 __all__ = ["IntonationAnalyzer", "TalkManager", "generate_talk_events"]
+
 
 def get_wav_duration_px(file_path: str, px_per_sec: int = 100) -> int:
     """WAVファイルの正確な長さをピクセルに変換する"""
     if not os.path.exists(file_path):
-        return 200 # ファイルがない場合のデフォルト
+        return 200
     try:
         with wave.open(file_path, 'rb') as wr:
             frames = wr.getnframes()
@@ -117,10 +94,6 @@ def get_wav_duration_px(file_path: str, px_per_sec: int = 100) -> int:
 # ══════════════════════════════════════════════════════════════
 
 class NoteEvent(ctypes.Structure):
-    """
-    VO-SE C++ エンジン用構造体。
-    C++ 側の struct NoteEvent とメモリ配置を完全一致させること。
-    """
     _fields_ = [
         ("wav_path",          ctypes.c_char_p),
         ("pitch_length",      ctypes.c_int),
@@ -128,25 +101,19 @@ class NoteEvent(ctypes.Structure):
         ("gender_curve",      ctypes.POINTER(ctypes.c_double)),
         ("tension_curve",     ctypes.POINTER(ctypes.c_double)),
         ("breath_curve",      ctypes.POINTER(ctypes.c_double)),
-        # UTAU 互換パラメータ（oto.ini 対応）
-        ("offset_ms",         ctypes.c_double),   # 原音の開始位置
-        ("consonant_ms",      ctypes.c_double),   # 固定範囲（子音部）
-        ("cutoff_ms",         ctypes.c_double),   # 右ブランク
-        ("pre_utterance_ms",  ctypes.c_double),   # 先行発声
-        ("overlap_ms",        ctypes.c_double),   # オーバーラップ
+        ("offset_ms",         ctypes.c_double),
+        ("consonant_ms",      ctypes.c_double),
+        ("cutoff_ms",         ctypes.c_double),
+        ("pre_utterance_ms",  ctypes.c_double),
+        ("overlap_ms",        ctypes.c_double),
     ]
+
 
 # ══════════════════════════════════════════════════════════════
 # 2. DLL/dylib ブリッジ
 # ══════════════════════════════════════════════════════════════
 
 class VOSEBridge:
-    """
-    Python ↔ C++ DLL/dylib ブリッジ。
-    - macOS: RTLD_GLOBAL でシンボルをグローバル公開
-    - keep_alive で GC によるクラッシュを防止
-    """
-
     def __init__(self) -> None:
         self.lib: Optional[ctypes.CDLL] = None
         self.keep_alive: List[Any] = []
@@ -168,13 +135,11 @@ class VOSEBridge:
             else:
                 self.lib = ctypes.CDLL(lib_path)
 
-            # init_official_engine（存在する場合のみ呼び出す）
             if hasattr(self.lib, "init_official_engine"):
                 self.lib.init_official_engine.argtypes = []
                 self.lib.init_official_engine.restype = None
                 self.lib.init_official_engine()
 
-            # execute_render の型定義
             self.lib.execute_render.argtypes = [
                 ctypes.POINTER(NoteEvent),
                 ctypes.c_int,
@@ -188,11 +153,7 @@ class VOSEBridge:
             print(f"❌ Engine load failed: {e}\n{traceback.format_exc()}")
             self.lib = None
 
-    def render(
-        self,
-        notes_list: List[Dict[str, Any]],
-        output_file: str = "output.wav",
-    ) -> None:
+    def render(self, notes_list: List[Dict[str, Any]], output_file: str = "output.wav") -> None:
         if not self.lib:
             print("❌ Engine not loaded.")
             return
@@ -213,14 +174,12 @@ class VOSEBridge:
             tension: list[float] = list(data.get("tension", [0.5] * 50))
             breath: list[float] = list(data.get("breath", [0.1] * 50))
 
-            # C 型に変換
             c_wav = phoneme.encode("utf-8")
             c_p   = (ctypes.c_double * len(pitch))(*pitch)
             c_g   = (ctypes.c_double * len(gender))(*gender)
             c_t   = (ctypes.c_double * len(tension))(*tension)
             c_b   = (ctypes.c_double * len(breath))(*breath)
 
-            # ★ GC 対策：C 側にポインタを渡す間、参照を保持
             self.keep_alive.extend([c_wav, c_p, c_g, c_t, c_b])
 
             c_notes[i].wav_path         = c_wav
@@ -229,7 +188,6 @@ class VOSEBridge:
             c_notes[i].gender_curve     = c_g
             c_notes[i].tension_curve    = c_t
             c_notes[i].breath_curve     = c_b
-            # UTAU パラメータ（oto.ini から外部差し込み可能）
             c_notes[i].offset_ms        = float(data.get("offset",        0.0))
             c_notes[i].consonant_ms     = float(data.get("consonant",     0.0))
             c_notes[i].cutoff_ms        = float(data.get("cutoff",        0.0))
@@ -241,6 +199,7 @@ class VOSEBridge:
             print(f"🎬 Render complete: {output_file}")
         except Exception as e:
             print(f"❌ execute_render error: {e}\n{traceback.format_exc()}")
+
 
 # ══════════════════════════════════════════════════════════════
 # 3. UI コンポーネント
@@ -263,18 +222,15 @@ class TimelineHeader(QWidget):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
 
-        # 目盛り
         painter.setPen(QPen(QColor(100, 100, 100), 1))
         painter.setFont(QFont("Consolas", 8))
         for x in range(0, self.width(), 50):
             painter.drawLine(x, 20, x, 30)
             painter.drawText(x + 5, 15, f"{x // 50:02d}:00")
 
-        # 再生ヘッド（赤ライン）
         painter.setPen(QPen(QColor(255, 60, 60), 2))
         painter.drawLine(self.playhead_x, 0, self.playhead_x, 30)
 
-        # 三角マーカー
         triangle = [
             QPoint(self.playhead_x - 5, 0),
             QPoint(self.playhead_x + 5, 0),
@@ -302,7 +258,6 @@ class TimelineHeader(QWidget):
         self.positionChanged.emit(self.playhead_x)
 
     def set_playhead(self, x: int) -> None:
-        """外部から再生ヘッドの位置を更新する（Pyrightのprivateアクセスエラー対策）"""
         self._update_playhead(x)
 
     def _apply_playhead_update(self, x: int) -> None:
@@ -312,7 +267,7 @@ class TimelineHeader(QWidget):
 
 
 class TimelineTrack(QFrame):
-    """タイムラインの各トラック（音声・動画・モーション）"""
+    """タイムラインの各トラック"""
 
     def __init__(self, name: str, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
@@ -323,16 +278,11 @@ class TimelineTrack(QFrame):
         self.dragging_clip_idx: Optional[int] = None
         self.drag_start_offset: int = 0
         self.setMouseTracking(True)
-        
-        # クリップ情報を保持するリスト
-        # 各要素は {"x": 開始位置, "width": 長さ, "text": 表示文字, "color": QColor}
         self.clips: List[Dict[str, Any]] = []
 
     def mousePressEvent(self, event: QMouseEvent) -> None:
         header_width = 100
         x = event.position().x() - header_width
-        
-        # 逆順でチェック（重なっている場合、上のものを掴む）
         for i, clip in enumerate(reversed(self.clips)):
             idx = len(self.clips) - 1 - i
             if clip["x"] <= x <= clip["x"] + clip["width"]:
@@ -350,59 +300,42 @@ class TimelineTrack(QFrame):
     def mouseReleaseEvent(self, event: QMouseEvent) -> None:
         self.dragging_clip_idx = None
 
-    def add_clip(
-        self, x: int, width: int, text: str, color: QColor = QColor(70, 130, 180, 200)
-    ) -> None:
-
-        """クリップをトラックに追加する"""
-        self.clips.append({
-            "x": x,
-            "width": width,
-            "text": text,
-            "color": color
-        })
-        self.update() # 再描画をトリガー
+    def add_clip(self, x: int, width: int, text: str, color: QColor = QColor(70, 130, 180, 200)) -> None:
+        self.clips.append({"x": x, "width": width, "text": text, "color": color})
+        self.update()
 
     def paintEvent(self, event: QPaintEvent) -> None:
         super().paintEvent(event)
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
 
-        # 1. トラックヘッダー（左側の名前部分）の描画
         header_width = 100
         painter.fillRect(QRect(0, 0, header_width, 60), QColor(45, 45, 45))
         painter.setPen(QColor(180, 180, 180))
         painter.setFont(QFont("Segoe UI", 9, QFont.Weight.Bold))
         painter.drawText(10, 35, self.track_name)
 
-        # 2. クリップ（素材の箱）の描画
-        # ヘッダー分 (100px) をオフセットとして右にずらして描画
         for clip in self.clips:
             clip_rect = QRect(header_width + clip["x"], 10, clip["width"], 40)
-            
             painter.setBrush(clip["color"])
             painter.setPen(QPen(clip["color"].lighter(120), 1))
             painter.drawRoundedRect(clip_rect, 4, 4)
-
             painter.setPen(Qt.GlobalColor.white)
             painter.setFont(QFont("Segoe UI", 8))
-            
-            # 修正ポイント: AlignmentFlag と TextElideMode は別物
-            # ここでは単純に中央揃えを指定。省略が必要な場合は QFontMetrics を使用します
             painter.drawText(
-                clip_rect.adjusted(5, 0, -5, 0), 
-                Qt.AlignmentFlag.AlignCenter, 
+                clip_rect.adjusted(5, 0, -5, 0),
+                Qt.AlignmentFlag.AlignCenter,
                 clip["text"]
             )
 
 
 class TimelineWidget(QWidget):
-    """タイムライン全体の管理ウィジェット"""
+    """タイムライン全体の管理ウィジェット（動画編集用：VOICE・VIDEO の2トラック）"""
 
     def __init__(self, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
         self._init_ui()
-        
+
     def _init_ui(self) -> None:
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -410,54 +343,45 @@ class TimelineWidget(QWidget):
 
         self.header = TimelineHeader()
 
-        # スクロールエリアの代わり（簡易版）
         self.scroll_content = QWidget()
         self.tracks_layout = QVBoxLayout(self.scroll_content)
         self.tracks_layout.setContentsMargins(0, 0, 0, 0)
         self.tracks_layout.setSpacing(1)
 
-        # ★ トラックを保持（後でここに追加するため）
+        # 動画編集に必要な2トラックのみ（MOTIONトラックは削除）
         self.voice_track = TimelineTrack("🎙️ VOICE")
         self.video_track = TimelineTrack("🎬 VIDEO")
-        self.motion_track = TimelineTrack("🦴 MOTION")
 
         self.tracks_layout.addWidget(self.voice_track)
         self.tracks_layout.addWidget(self.video_track)
-        self.tracks_layout.addWidget(self.motion_track)
         self.tracks_layout.addStretch()
 
         layout.addWidget(self.header)
         layout.addWidget(self.scroll_content)
-        
-        # 水平スクロールバー（将来的に実装）
+
         self.h_scrollbar = QScrollBar(Qt.Orientation.Horizontal)
         layout.addWidget(self.h_scrollbar)
-        
-class PreviewView(QGraphicsView):
-    """プレビューエリア（画像表示・移動対応）"""
 
-    def __init__(self, label: str = "Preview") -> None:
+
+class PreviewView(QGraphicsView):
+    """動画プレビューエリア（画像表示・移動対応）"""
+
+    def __init__(self) -> None:
         super().__init__()
-        
-        # 修正ポイント: self.scene ではなく self._scene_obj に変更
         self._scene_obj = QGraphicsScene()
         self.setScene(self._scene_obj)
-        
         self.setBackgroundBrush(QBrush(QColor(30, 30, 30)))
         self.setRenderHint(QPainter.RenderHint.Antialiasing)
         self.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform)
-        
-        # 1920x1080の仮想キャンバス
+
+        # 1920x1080 の仮想キャンバス
         self._scene_obj.setSceneRect(0, 0, 1920, 1080)
         self.centerOn(960, 540)
-        
-        # 編集領域の枠線
         self._scene_obj.addRect(self._scene_obj.sceneRect(), QPen(QColor(60, 60, 60)))
-        
+
         self.current_character: Optional[QGraphicsPixmapItem] = None
-        
-        # デバッグ用テキスト (変数名も一応変更)
-        self.debug_item = self._scene_obj.addText(label)
+
+        self.debug_item = self._scene_obj.addText("Preview Area (FFmpeg Output)")
         self.debug_item.setDefaultTextColor(QColor(100, 100, 100))
 
     def add_character(self, image_path: str) -> None:
@@ -466,21 +390,16 @@ class PreviewView(QGraphicsView):
         if pixmap.isNull():
             print(f"❌ 画像の読み込みに失敗: {image_path}")
             return
-            
-        # アイテム作成
         item = QGraphicsPixmapItem(pixmap)
-        # 移動と選択を可能にするフラグ
         item.setFlags(
             QGraphicsPixmapItem.GraphicsItemFlag.ItemIsMovable |
             QGraphicsPixmapItem.GraphicsItemFlag.ItemIsSelectable
         )
-        
-        # 画面中央付近に配置
-        item.setPos(960 - pixmap.width()/2, 540 - pixmap.height()/2)
-        
+        item.setPos(960 - pixmap.width() / 2, 540 - pixmap.height() / 2)
         self._scene_obj.addItem(item)
         self.current_character = item
         print(f"✅ キャラクタ表示成功: {image_path}")
+
 
 # ══════════════════════════════════════════════════════════════
 # 4. メインウィンドウ
@@ -492,7 +411,6 @@ class CutStudioMain(QMainWindow):
         self.setWindowTitle("VO-SE Cut Studio - Early Alpha")
         self.resize(1280, 800)
 
-        # エンジン初期化
         self.bridge = VOSEBridge()
 
         self.analyzer: Optional[IntonationAnalyzer] = (
@@ -502,10 +420,8 @@ class CutStudioMain(QMainWindow):
             TalkManager() if is_engine_available else None
         )
 
-        # UI
-        self.preview_stack = QStackedWidget()
-        self.video_preview = PreviewView("Preview Area (FFmpeg Output / Bone Overlay)")
-        self.motion_editor = PreviewView("Motion Editor")
+        # プレビューは動画編集の1画面のみ
+        self.video_preview = PreviewView()
         self._init_ui()
 
     def _init_ui(self) -> None:
@@ -535,32 +451,9 @@ class CutStudioMain(QMainWindow):
         self.generate_button.clicked.connect(self._on_generate_clicked)
         left_layout.addWidget(self.generate_button)
 
-        # ── 中央パネル（プレビュー）──────────────
-        self.preview_stack.addWidget(self.video_preview)
-        self.preview_stack.addWidget(self.motion_editor)
-
-        # ── 右パネル（モード切替）────────────────
-        right = QFrame()
-        right_layout = QVBoxLayout(right)
-        right_layout.addWidget(QLabel("🛠️ モード"))
-
-        self.btn_video = QPushButton("🎬 動画編集")
-        self.btn_video.setCheckable(True)
-        self.btn_video.setChecked(True)
-        self.btn_video.clicked.connect(lambda: self._switch_mode(0))
-
-        self.btn_motion = QPushButton("🦴 モーション")
-        self.btn_motion.setCheckable(True)
-        self.btn_motion.clicked.connect(lambda: self._switch_mode(1))
-
-        right_layout.addWidget(self.btn_video)
-        right_layout.addWidget(self.btn_motion)
-        right_layout.addStretch()
-
-        # 上部結合
+        # ── 中央パネル（動画プレビュー）──────────────
         h_splitter.addWidget(left)
-        h_splitter.addWidget(self.preview_stack)
-        h_splitter.addWidget(right)
+        h_splitter.addWidget(self.video_preview)
         h_splitter.setStretchFactor(1, 6)
 
         # ── 下部パネル（タイムライン）────────────
@@ -581,20 +474,13 @@ class CutStudioMain(QMainWindow):
     # スロット
     # ----------------------------------------------------------
 
-    def _switch_mode(self, index: int) -> None:
-        self.preview_stack.setCurrentIndex(index)
-        self.btn_video.setChecked(index == 0)
-        self.btn_motion.setChecked(index == 1)
-        
-
     def _on_generate_clicked(self) -> None:
         text = self.tts_input.toPlainText().strip()
         if not text:
             return
 
         print(f"🎙️ 合成開始: {text}")
-        
-        # 1. 音声合成の実行（TalkManager で WAVを書き出す）
+
         wav_filename = "output_tts.wav"
         if self.talk_manager:
             ok, _ = self.talk_manager.synthesize(text, wav_filename)
@@ -602,9 +488,7 @@ class CutStudioMain(QMainWindow):
                 print("❌ TTS合成に失敗しました")
                 return
 
-        # 2. 生成されたWAVから正確な秒数を計算
-        # デフォルトは 1秒=100px
-        clip_width = 200 # 失敗時のフォールバック
+        clip_width = 200
         try:
             with wave.open(wav_filename, 'rb') as wr:
                 duration = wr.getnframes() / float(wr.getframerate())
@@ -612,27 +496,25 @@ class CutStudioMain(QMainWindow):
         except Exception as e:
             print(f"⚠️ WAV解析エラー: {e}")
 
-        # 3. タイムラインの現在の位置（再生ヘッド）を取得
         start_x = self.timeline.header.playhead_x
 
-        # 4. トラックへ追加
         self.timeline.voice_track.add_clip(
             start_x, clip_width, f"Voice: {text[:10]}..."
         )
         self.timeline.video_track.add_clip(
-            start_x, clip_width, f"Text: {text}", 
+            start_x, clip_width, f"Text: {text}",
             color=QColor(60, 179, 113, 200)
         )
-        # 5. 再生ヘッドを次の入力位置へ自動で進める
+
         self.timeline.header.set_playhead(start_x + clip_width)
 
-        # (オプション) C++ エンジン側での高品質レンダリングも並行
         if is_engine_available and self.analyzer:
             notes = generate_talk_events(text, self.analyzer)
             if notes:
                 self.bridge.render(notes, output_file="output_rendered.wav")
 
         self.tts_input.clear()
+
 
 # ══════════════════════════════════════════════════════════════
 # エントリーポイント
