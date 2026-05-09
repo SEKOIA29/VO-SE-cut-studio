@@ -300,7 +300,13 @@ class TimelineTrack(QFrame):
     def mouseReleaseEvent(self, event: QMouseEvent) -> None:
         self.dragging_clip_idx = None
 
-    def add_clip(self, x: int, width: int, text: str, color: QColor = QColor(70, 130, 180, 200)) -> None:
+    def add_clip(
+        self,
+        x: int,
+        width: int,
+        text: str,
+        color: QColor = QColor(70, 130, 180, 200)
+    ) -> None:
         self.clips.append({"x": x, "width": width, "text": text, "color": color})
         self.update()
 
