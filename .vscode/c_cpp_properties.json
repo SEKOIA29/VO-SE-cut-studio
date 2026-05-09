@@ -1,0 +1,17 @@
+{
+    "configurations": [
+        {
+            "name": "Tahoe-Dev",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "${workspaceFolder}/sdk/ffmpeg/include"
+            ],
+            "defines": [
+                "_WIN64",
+                "__STDC_CONSTANT_MACROS"
+            ],
+            "intelliSenseMode": "windows-msvc-x64"
+        }
+    ],
+    "version": 4
+}
