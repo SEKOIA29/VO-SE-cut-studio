@@ -31,16 +31,9 @@ jobs:
           cache: 'pip'
           cache-dependency-path: '**/requirements.txt'
 
-
       - name: Install System Dependencies (macOS)
         if: matrix.os == 'macos-latest'
         run: brew install libsndfile
-
-      - name: Install System Dependencies (Windows)
-        if: matrix.os == 'windows-latest'
-        run: |
-          # SoundFileの依存関係は通常pipで入るが、
-          # DLLのロードに失敗する場合は、MSVC再配布可能パッケージ等の確認が必要
 
       - name: Install Hardened Dependencies
         shell: bash
@@ -53,126 +46,38 @@ jobs:
       - name: 🛡️ Strict Linting & Auto-Fix (Ruff)
         shell: bash
         run: |
-          # 1. 自動修正を適用
           ruff check . --select E,F,W,I --fix
           ruff format .
-          
-          # 2. 修正後の状態を確認（まだ汚れがあれば、ここでエラーとして落とす）
           ruff check . --select E,F,W,I
           ruff format . --check
 
-      - name: Lint with Ruff
-        run: |
-          # 修正箇所: --ignore e501,e401 -> E501,E401
-          ruff check . --select E,F --ignore E501,E401 --fix --exit-zero
-
       - name: Type Check with Pyright
-        run: |
-          pyright .
-
+        run: pyright .
           
-
-  
-      - name: 🎙️ Pack Voice Assets (Generate voice_data.h)
+      - name: 🎙️ Pack Voice Assets
         shell: bash
         run: |
           python modules/tools/pack_voice.py
-          # 生成されたか確認（デバッグ用）
           ls -l src/core/voice_data.h
           
-      - name: Debug File Structure
+      - name: 🛠️ Native Core Compilation (Unified Build)
         shell: bash
         run: |
-          echo "--- Current Directory Structure ---"
-          find . -maxdepth 3 -name "*.cpp"
-          
-      - name: 🛠️ Native Core Compilation
-        shell: bash
-        run: |
-          mkdir -p bin obj
-
-          # 1. ソース・インクルード収集
-          SOURCES=$(find src \( -name "*.cpp" -o -name "*.c" \) | sort)
-          INCLUDES=$(find src -type d | sed 's/^/-I/' | tr '\n' ' ')
-          # include/ 以下の全サブディレクトリも収集
-          INCLUDE_DIRS=$(find include -type d | sed 's/^/-I/' | tr '\n' ' ')
-
-          echo "--- 🔍 Debug Check ---"
-          SRC_COUNT=$(echo "$SOURCES" | grep -c '.')
-          echo "Found $SRC_COUNT source files."
-
-          if [ "$SRC_COUNT" -le 1 ]; then
-            echo "❌ CRITICAL ERROR: Engine files not found in src/"
-            ls -R src; exit 1
-          fi
-
-          # 2. OS別フラグ設定
-          if [ "${{ matrix.os }}" = "windows-latest" ]; then
-            CXX_CMD="g++"
-            EXTRA_FLAGS="-mavx2 -static -static-libgcc -static-libstdc++"
-            OUT="bin/libvo_se_cut.dll"
-            LINK_FLAGS="-shared"
-          else
-            CXX_CMD="clang++"
-            EXTRA_FLAGS="-undefined dynamic_lookup"
-            OUT="bin/libvo_se_cut.dylib"
-            LINK_FLAGS="-dynamiclib"
-          fi
-
-          # 3. 個別コンパイル
-          printf '%s\n' "$SOURCES" | while IFS= read -r SRC; do
-            [ -z "$SRC" ] && continue
-            OBJ="obj/$(echo "$SRC" | tr '/' '_' | tr ' ' '_').o"
-            DIR=$(dirname "$SRC")
-
-            echo "🔨 Compiling: $SRC"
-            $CXX_CMD -std=c++17 -fPIC -c "$SRC" \
-              -I"$DIR" \
-              $INCLUDES \
-              $INCLUDE_DIRS \
-              -O3 -w \
-              -o "$OBJ"
-
-            if [ $? -ne 0 ]; then
-              echo "❌ Failed: $SRC"
-              exit 1
-            fi
-          done || { echo "❌ Compile error. Aborting."; exit 1; }
-
-          # 4. リンク
-          echo "🔗 Linking → $OUT"
-          $CXX_CMD -std=c++17 $LINK_FLAGS \
-            -o "$OUT" \
-            obj/*.o \
-            $EXTRA_FLAGS \
-            -O3 -w
-
-          echo "✅ Build complete: $OUT"
-          
-      - name: 🛠️ Native Core Compilation (Final Fix for Source Discovery)
-        shell: bash
-        run: |
-          mkdir -p bin obj
-
-          # 1. 丸括弧を使って「src以下の(cppまたはc)」を確実に全探索する
-          # これにより src/world/harvest.c 等がリストに入ります
+          mkdir -p bin
           SOURCES=$(find src -type f \( -name "*.cpp" -o -name "*.c" -o -name "*.cc" \))
-          
-          # 2. インクルードパスの整形
           ALL_INC_DIRS=$(find src include -type d | sed 's/^/-I /' | tr '\n' ' ')
           
           echo "--- 🔍 Found Sources ---"
           echo "$SOURCES"
 
           if [ "${{ matrix.os }}" = "macos-latest" ]; then
-            # macOS 用コンパイル
             clang++ -std=c++17 -shared -fPIC \
               $SOURCES \
               $ALL_INC_DIRS \
               -O3 -o bin/libvo_se_cut.dylib \
               -framework Foundation
           else
-            # Windows (MinGW) 用コンパイル
+            # Windows (MinGW)
             g++ -std=c++17 -shared -fPIC \
               $SOURCES \
               $ALL_INC_DIRS \
@@ -180,20 +85,19 @@ jobs:
               -Wl,--out-implib,bin/libvo_se_cut.a
           fi
 
-      # --- 4. パッケージング (PyInstaller) ---
-      - name: 📦 Final Packaging
+      - name: 📦 Final Packaging (PyInstaller)
         shell: bash
         run: |
           mkdir -p dist_out
           if [ "${{ matrix.os }}" = "windows-latest" ]; then
             pyinstaller --noconsole --onefile --clean \
               --add-data "bin/libvo_se_cut.dll;bin" \
-              --name "VO-SE_Cut_Studio_Win" modules/gui/main_window.py  # ← パス修正
+              --name "VO-SE_Cut_Studio_Win" modules/gui/main_window.py
             mv dist/VO-SE_Cut_Studio_Win.exe dist_out/
           else
             pyinstaller --noconsole --windowed --clean \
               --add-data "bin/libvo_se_cut.dylib:bin" \
-              --name "VO-SE_Cut_Studio_Mac" modules/gui/main_window.py  # ← パス修正
+              --name "VO-SE_Cut_Studio_Mac" modules/gui/main_window.py
             codesign --force --deep --sign - "dist/VO-SE_Cut_Studio_Mac.app"
             cd dist && zip -ry ../dist_out/VO-SE_Cut_Studio_Mac.zip VO-SE_Cut_Studio_Mac.app && cd ..
           fi
@@ -205,7 +109,7 @@ jobs:
           path: dist_out/
 
   release:
-    name: 🌍 Global Distribution
+    name: 🌎 Global Distribution
     needs: check-and-build
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/v')
@@ -224,8 +128,8 @@ jobs:
             final_assets/*.zip
           body: |
             ## VO-SE Cut Studio Official Release
-            - Automated Type & Lint Checks: PASSED
-            - Native Core Integration: VERIFIED
-            - Cross-Platform Build: SUCCESS
+            - Automated Type & Lint Checks: **PASSED**
+            - Native Core Integration: **VERIFIED**
+            - Cross-Platform Build: **SUCCESS**
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
