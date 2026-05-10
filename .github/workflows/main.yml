@@ -65,7 +65,7 @@ jobs:
         run: |
           mkdir -p bin
           SOURCES=$(find src -type f \( -name "*.cpp" -o -name "*.c" -o -name "*.cc" \))
-          ALL_INC_DIRS=$(find src include -type d | sed 's/^/-I /' | tr '\n' ' ')
+          ALL_INC_DIRS="-I sdk/ffmpeg/include $(find src include -type d | sed 's/^/-I /' | tr '\n' ' ')"
           
           echo "--- 🔍 Found Sources ---"
           echo "$SOURCES"
