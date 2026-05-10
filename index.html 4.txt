@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="google-site-verification" content="google-site-verification: google4de805a3326b586d.html" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="VO-SE Pro: 既存の音声合成の『要塞』を崩す、次世代エンジン 'aural' 搭載。規約、重さ、コストからの解放。">
+    <meta name="keywords" content="VO-SE,VO-SE Pro, aural engine, 音声合成, UTAU, 歌声合成, 軽量, AI, NPU, DTM, UTAU対応, 無料, 完全無料, フリーソフト">
+    
+    <meta property="og:title" content="VO-SE Pro | 規約と、0.1秒の衝撃。">
+    <meta property="og:description" content="四天王を過去にする、圧倒的パフォーマンス。auralの純粋な「楽器」を、あなたの手に。">
+    <meta property="og:image" content="images/og-preview.jpg">
+    <meta name="twitter:card" content="summary_large_image">
+    <link rel="icon" href="images/favicon.png" type="image/png">
+      
+
+    <title>VO-SE Pro | 顔、色々な。声、爆速。心、自由。</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Noto+Sans+JP:wght@400;700;900&display=swap" rel="stylesheet">
+    
+    <style>
+        html { scroll-behavior: smooth; }
+        body { background-color: #000; color: #fff; font-family: 'Inter', 'Noto Sans JP', sans-serif; overflow-x: hidden;    
+        /* margin: 0; height: 100vh;display: flex;justify-content: center;align-items: center;overflow: hidden; */
+        }
+        .hero-gradient { background: radial-gradient(circle at center, #1a1a1a 0%, #000 100%); }
+        .accent-gradient { background: linear-gradient(135deg, #fff 0%, #888 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .red-accent-gradient { background: linear-gradient(135deg, #ff4d4d 0%, #a70000 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .card { background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.08); transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+        .card:hover { border-color: rgba(255, 255, 255, 0.3); background: rgba(255, 255, 255, 0.05); transform: translateY(-5px); }
+        .btn-main { background: #fff; color: #000; box-shadow: 0 0 30px rgba(255,255,255,0.2); transition: all 0.3s ease; }
+        .btn-main:hover { transform: scale(1.05); box-shadow: 0 0 50px rgba(255,255,255,0.4); }
+        
+        
+body {
+      background: #000000;
+      font-family: sans-serif;
+      padding: 40px;
+    }
+
+    .code-box {
+      position: relative;
+      background: #ffffff;
+      color: #1e1e1e;
+      padding: 20px;
+      border-radius: 12px;
+      font-family: Consolas, monospace;
+      overflow-x: auto;
+    }
+
+    .copy-btn {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      border: none;
+      background: #ffffff;
+      color: rgb(0, 0, 0);
+      padding: 6px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .copy-btn:hover {
+      background: #666;
+    }
+
+    pre {
+      margin: 0;
+      white-space: pre-wrap;
+    }
+
+.fadein {
+  opacity: 0;
+}
+.fadeincaption{
+  opacity: 0;
+}
+.fadeinsentence{
+  opacity: 0;
+}
+.fadein.is-animated {
+  animation: fadeIn 1s ease forwards;
+  animation-delay: 0.4s;
+}
+
+.fadeincaption.is-animated{
+  animation: fadeIn 1s ease forwards;
+  animation-delay: 0.6s;
+}
+.fadeinsentence.is-animated{
+  animation: fadeIn 1s ease forwards;
+  animation-delay: 0.8s;
+}
+@keyframes fadeIn {
+  from{
+    filter: blur(6px);
+    scale: (0.8);
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+    filter: blur(0px);
+    scale: (1.0);
+  }
+}
+.char {
+  display: inline-block;
+  opacity: 0;
+  transform: translateY(20px);
+}
+
+.char.is-animated {
+  animation: charFadeUp 0.6s ease forwards;
+  animation-delay: 1.6s;
+}
+
+@keyframes charFadeUp {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+  .anim-box.kiran {
+  opacity: 1;
+  overflow: hidden;
+  position: relative;
+  cursor: pointer;
+}
+.anim-box.kiran::before {
+  background-color: #fff;
+  content: "";
+  display: block;
+  position: absolute;
+  top: -100px;
+  left: 0;
+  width: 30px;
+  height: 100%;
+  opacity: 0;
+  transition: cubic-bezier(0.32, 0, 0.67, 0);
+}
+.anim-box.kiran:hover::before {
+  animation: kiran 0.5s linear;
+}
+ 
+@keyframes kiran {
+  0% {
+    transform: scale(2) rotate(45deg);
+    opacity: 0;
+  }
+  20% {
+    transform: scale(20) rotate(45deg);
+    opacity: 0.6;
+  }
+  40% {
+    transform: scale(30) rotate(45deg);
+    opacity: 0.4;
+  }
+  80% {
+    transform: scale(45) rotate(45deg);
+    opacity: 0.2;
+  }
+  100% {
+    transform: scale(50) rotate(45deg);
+    opacity: 0;
+  }
+}
+
+.anim-box.slidein {
+  display: inline-block;
+  opacity: 0;
+}
+
+.anim-box.slidein.is-animated {
+  animation: slideIn 1s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+  animation-delay: 0.4s;
+}
+ 
+@keyframes slideIn {
+  0% {
+    transform: translateX(180px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateX(0);
+  }
+  40%,100% {
+    opacity: 1;
+  }
+}
+.bg .bg-wrap {
+  position: relative;
+  display: inline-block;
+  margin-top: 5px;
+}
+.bg.is-animated .bg-wrap::before {
+  animation: bg 2.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  background: linear-gradient(to right, #362ae0 0%,#3b79cc 50%,#42d3ed 100%);
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  transform-origin: left center;
+}
+.bg .bg-wrap .inn {
+  color: #fff;
+  display: inline-block;
+  font-size: 36px;
+  font-weight: bold;
+  padding: 5px 15px;
+  position: relative;
+  z-index: 1;
+}
+ 
+@keyframes bg {
+  0% {
+    opacity: 0;
+    transform: scaleX(0) translateX(-5%);
+  }
+  30% {
+    transform: scaleX(1) translateX(0);
+  }
+  100% {
+    transform: scaleX(1) translateX(0);
+  }
+  30%, 100% {
+    opacity: 1;
+  }
+}
+ .overlay-text {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  color: #ff4d4d; /* アクセント色（変えてOK） */
+  transform: translateX(100%);
+  opacity: 0;
+}
+
+/* 発火後 */
+.overlay-text.is-animated {
+  animation: slideOverlay 1s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+}
+.burst-title {
+  font-size: 64px;
+  font-weight: 900;
+  display: inline-block;
+  letter-spacing: 0.05em;
+  transform-origin: center;
+}
+
+.burst-title.is-animated {
+  animation: fontBurst 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+
+@keyframes slideOverlay {
+  0% {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  40% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+
+.dark{
+  background: #000;
+}
+
+.Shine{
+  padding: 10px 0;
+  margin: 0;
+  font-size: 128px;
+  font-weight: bold;
+  background-image: linear-gradient(
+    70deg,
+    #dc143c 45%, /* font color */
+    #FFF 50%,
+    #dc143c 55% /* font color */
+  );
+  background-size: 500% 100%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  animation: shine 5s infinite;
+}
+
+@keyframes shine {
+  0% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+.anim-box.popup.is-animated {
+  animation: popup 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+ 
+@keyframes popup {
+  0% {
+    transform: translateY(40px) scale(0.8);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0) scale(1.0);
+  }
+  80%, 100% {
+    opacity: 1;
+  }
+}
+.accordion {
+  width: 100%;
+  max-width: 800px;
+}
+
+.btn {
+  width: 100%;
+  padding: 16px;
+  font-size: 18px;
+  font-weight: bold;
+  cursor: pointer;
+  background: #fff;
+  color: #000;
+  border-radius: 12px;
+}
+
+.content {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.4s ease;
+  background: #111;
+  color: #fff;
+  padding: 0 20px;
+  border-radius: 0 0 12px 12px;
+}
+
+.content p,
+.content ul {
+  margin: 16px 0;
+}
+
+    </style>
+
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-XXXXXXXXXX');
+    </script>
+</head>
+<body class="antialiased">
+    
+    <section class="h-screen flex flex-col justify-center items-center text-center px-6 hero-gradient relative js-animate ">
+        <div class="absolute inset-0 bg-cover bg-center opacity-20 pointer-events-none" style="background-image: url('images/hero-bg.jpg');"></div>
+        <div class="absolute top-10 text-sm tracking-[0.3em] text-red-600 font-bold uppercase">v1.3.0 | The Fortress Breaker</div>
+        
+       <h1 class="text-6xl md:text-[10rem] font-black mb-8 accent-gradient tracking-tighter leading-[0.85] ">
+            規約と、<br><span class="red-accent-gradient text-8xl md:text-[8rem] Shine js-animate">0.1秒の衝撃。</span></span>
+        </h1>
+        <p class="text-gray-400 text-lg md:text-2xl mb-12 font-light tracking-widest  js-animate">声、爆速。顔、色々な。心、自由。</p>
+        
+        <div class="flex flex-col md:flex-row gap-6 z-10">
+            <a href="#download" class="btn-main px-12 py-5 rounded-full font-bold text-xl fadeinsentence js-animate">VO-SE Proを無料入手</a>
+            <a href="https://github.com/sekoia29/VO-SE-Pro" target="_blank" class="border border-zinc-700 px-12 py-5 rounded-full font-bold text-xl hover:bg-zinc-900 transition-colors fadeinsentence js-animate">GitHub Repo</a>
+        </div>
+    </section>
+
+    <section class="py-32 bg-red-950/5 border-y border-red-900/10">
+        <div class="max-w-4xl mx-auto px-6 text-center">
+            <h2 class="text-4xl font-bold mb-10 red-accent-gradient tracking-tighter italic">WHY VO-SE?</h2>
+            <p class="text-xl md:text-2xl text-gray-300 leading-relaxed font-light">
+                なぜ、自分のPCで声を出すために「許可」が必要なのか？<br>
+                なぜ、最新のMacが音声合成ごときでファンを回すのか？<br>
+                <span class="text-white font-bold">その疑問が、要塞を崩す唯一の矛「VO-SE Pro」を完成させた。</span>
+            </p>
+        </div>
+    </section>
+
+    <section class="py-32 bg-red-950/5 border-y border-red-900/10">
+      <h3 class="text-1xl font-bold text-red-600 uppercase tracking-widest mb-4 text-center"></h3>
+        <div class="max-w-4xl mx-auto px-6 text-center">
+          <div class="text-8xl font-bold">
+                <h1>動作メモリ、</h1>
+                <h1>わずか<span class="fadein js-animate">500</span>MB。</h1>
+                
+          </div>
+          <h2 class="max-w-5xl mx-auto px-6 text-center text-5xl font-bold mb-4 js-split">「スペックの奴隷」を辞めろ。</h2>
+          <p class="text-2xl max-w-4xl mx-auto px-6 text-center font-bold mb-4 text-gray-400 leading-relaxe js-animate fadeinsentence">
+            <span class="text-white "><strong>ファイルサイズ約1MB<sup>※1</sup>,動作メモリわずか約500MB。</strong></span>
+            <br>数学的アルゴリズムがCPUの限界を突破。
+            <br>NPUを支配するaural engineなら、爆音のファンとはおさらば。
+            <br>PCは熱くならず、あなたの魂だけが熱くなる。
+            <br>4K編集の裏で、配信の裏で。VO-SEは誰の邪魔もせず、完璧に歌う。
+          </p>
+          <div class="text-1xl font-bold leading-relaxed text-center text-gray-400 js-animate fadeinsentence">
+              <div>
+                <h1>※1 VO-SE Pro本体（Macos用）のサイズのみです。Githubからzip形式でインストールする場合は、
+                <br>必要ライブラリなどで2GBほどの空き容量が必要な場合があります。</h1>
+              </div>
+            </div>
+          </div>
+    </section>
+    <section class="py-32 bg-red-950/5 border-y border-red-900/10">
+        <div class="max-w-4xl mx-auto px-6 text-center">
+          <div class="text-8xl font-bold">
+                <h1><span class = "js-animate fadein">全UTAU音源に</span>
+                <br>対応。</h1>
+          </div>
+          <h2 class="max-w-5xl mx-auto px-6 text-center text-5xl font-bold mb-4 js-split2">曲のカバーも一瞬で。</h2>
+          <p class="text-2xl max-w-4xl mx-auto px-6 text-center font-bold mb-4 text-gray-400 leading-relaxe js-animate fadeinsentence">
+            <br><span class = "text-white"><strong>曲の音声さえあれば自動で音階を解析、出力。</strong></span>
+            <br>他がGPUを食い潰す間、VO-SEのNPUによる解析は一瞬。
+            <br>VO-SEは全UTAU音源を「最新の楽器」へ昇華させる。
+            <br>眠っている数千の資産を、戦場へ連れ戻せ。
+          </p>
+          </div>
+    </section>
+    <section class="py-32 bg-red-950/5 border-y border-red-900/10">
+            <div class="text-8xl font-bold text-center">
+                <h1 >利用規約,</h1>
+                <span class="anim-box slidein js-animate inline-block text-center">なし。<span class = "text-2xl"><sup>※2</sup></span></span>
+            </div>
+            <div class="text-5xl font-bold text-center js-split3">
+                <span ><strong>「規約の迷路」</strong>を焼き払え。</span>
+            </div>
+            <div class="text-2xl font-bold text-gray-400 leading-relaxed">
+              <p class = "text-center js-animate fadeinsentence">
+                VO-SEは商用利用、創作、どんな利用にも<strong> <span class="text-white">一切の制限なし。</span></strong><sup>※2</sup>。
+                <br>動画を作るたびにライセンスを確認し、商用利用の壁に怯える。
+                <br>そんなのは「創作」じゃない、ただの「事務作業」だ。
+                <br>規定という名の要塞のない、この戦場で試されるのはあなたの腕と情熱だけ。
+              </p>
+            </div>
+            <div class="text-1xl font-bold leading-relaxed text-center text-gray-400 js-animate fadeinsentence">
+              <div>
+                <span>※2 aural engineとVO-SE公式音源に限ります。UTAU音源などaural製ではない音源を使う場合はその規定に従ってください。</span>
+              </div>
+            </div>
+            
+        
+</h1>
+        </div>
+    </section>
+    <section class="py-32 px-6 bg-black font-bold py-32 bg-red-950/5 border-y border-red-900/10">
+      <p class="text-5xl">公式音源<br></p>
+      <p>&nbsp;</p> 
+      <div class="card p-10 rounded-3xl">
+                <h2 class="text-3xl font-bold mb-4">公式音源提供者募集中！</h2>
+                <p class="text-gray-400 text-sm">VO-SEには公式音源がまだありません。
+                <br> そこで、今auralは公式音源提供者を募集しています。
+                <br>興味のある方は<a href="https://x.com/Aural_Sekoia"><span class = "text-white"><u>こちらから</u></span></a>DMにて連絡してください！
+              </p>
+        </div>
+    </section>
+    <section class="py-32 px-6 bg-black font-bold bg-red-950/5 border-y border-red-900/10 rounded-3xl">
+
+  <p class="text-5xl">インストール方法</p>
+
+  <p>&nbsp;</p>
+
+  <p class="text-4xl">投げる、即、歌う。</p>
+
+  <p>&nbsp;</p>
+
+  <p class="text-gray-400 text-2xl">
+    ダウンロードして、開く、ただそれだけ。<sup>※3</sup><br>
+    VO-SEには面倒な初期設定はありません。
+  </p>
+<p>&nbsp;</p>
+
+  <p class="text-gray-400 text-sm">
+    ※3 exeかappでインストールする場合のみです。Githubからのzip形式でのインストールは下を参考にしてください。
+    特に、以下のボックスを開くと書いてある
+    前提ソフト(python)を多く導入している方は、
+    GitHubからzip形式でダウンロードすることを推奨します。
+  </p>
+  <p>&nbsp;</p>
+      <div class="accordion">
+  <button class="btn">GitHubからzip形式でダウンロードする場合</button>
+
+  <div class="content">
+    <p class="text-white rounded-4xl">
+      ①必要なライブラリなどのインストール
+    </p>
+
+    <div class="text-gray-400 rounded-3xl">
+      <p>以下を<strong>すべて</strong>入れてください。</p>
+      <p>※注 合計2GBほどの空き容量が必要な場合があります。</p>
+
+      <ul>
+        <li>&nbsp;</li>
+        <li><a href="https://www.python.org/downloads/release/python-3119/"><u>python(3.10〜3.11推奨)</u></a></li>
+        <li><a href="https://azure.microsoft.com/ja-jp/products/visual-studio-code"><u>visual-studio-codeや</u></a><a href="https://developer.apple.com/jp/xcode/"><u>xcodeなどの</u></a>c++とpythonのコンパイラ</li>
+        <li>&nbsp;</li>
+        <li>以下ライブラリ すべてpipでインストールできます</li>
+        <li>&nbsp;</li>
+        <li><a href="https://numpy.org/ja/install/"><u>NumPy</u></a></li>
+        <li><a href="https://github.com/spatialaudio/python-sounddevice.git"><u>sounddevice</u></a></li>
+        <li><a href="https://pypi.org/project/soundfile/"><u>soundfile</u></a></li>
+        <li><a href="https://github.com/r9y9/pyopenjtalk"><u>pyopenjtalk</u></a></li>
+        <li><a href="https://github.com/mido/mido"><u>mido</u></a></li>
+        <li><a href="https://github.com/chardet/chardet"><u>chardet</u></a></li>
+        <li><a href="https://docs.pytest.org/en/stable/"><u>pytest</u></a></li>
+        <li><a href="https://www.qt.io/ja-jp/qt-for-python"><u>Pyside6</u></a></li>
+      </ul>
+    </div>
+
+    <p class="text-white rounded-4xl">
+      ②インストールして実行
+    </p>
+
+    <div class="text-gray-400 rounded-3xl">
+      下からインストールし、.zipを開いてファイルを出す<br>
+      先ほどインストールしたVSCodeなどでそのファイルを表示
+    </div>
+
+    <p class="text-white rounded-3xl">
+      あとはmain.pyを実行するだけ!zip形式でも初期設定は不要です。
+    </p>
+  </div>
+</div>
+</div>
+          
+  </section>
+    
+    <section id="download" class="py-32 px-6 bg-zinc-900/30 border-t border-white/10">
+        <div class="max-w-4xl mx-auto text-center">
+            <h2 class="text-5xl font-black mb-12 accent-gradient text-white">今すぐ、要塞の外へ。</h2>
+
+            <div class="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto text-left">
+                <div class="card p-10 rounded-[2.5rem] bg-white/5 border-white/40 flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center gap-3 mb-6">
+                                <svg class="w-8 h-8 fill-white" viewBox="0 0 448 512"><path d="M0 93.7l183.6-25.3v177.4H0V93.7zm0 324.6l183.6 25.3V268.3H0v150zm203.8 28.1L448 480V268.3H203.8v178.1zm0-380.6v180.3H448V32L203.8 65.8z"/></svg>
+                                <h3 class="text-2xl font-bold">Windows</h3>
+                        </div>
+                        <p class="text-gray-500 text-sm mb-6 font-mono tracking-tighter">EXE Installer </p>
+                    </div>
+                    <a href="https://www.dropbox.com/scl/fi/fae6bem165wjpq0vdko28/VO-SE_PRO_Win.exe?rlkey=ld8kbvtgo1t599ezismt9b0vb&st=xq1k3kcp&dl=1" 
+                       class="block text-center bg-white text-black py-4 rounded-full font-bold hover:scale-105 transition-transform">
+                        Download for Win
+                    </a>
+                </div>
+
+                <div class="card p-10 rounded-[2.5rem] bg-white/5 border-zinc-700 flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center gap-3 mb-6">
+                                <svg class="w-8 h-8 fill-white" viewBox="0 0 384 512"><path d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3z"/></svg>
+                                <h3 class="text-2xl font-bold">macOS</h3>
+                        </div>
+                        <p class="text-gray-500 text-sm mb-6 font-mono tracking-tighter">disk image</p>
+                    </div>
+                    <a href="https://www.dropbox.com/scl/fi/yhg77dcmq2hi5rnil8kbb/VO-SE_PRO_Mac.zip?rlkey=oqhhk74rplj5g5wdug6av4aw8&st=absrnmip&dl=1" 
+                       class="block text-center border border-zinc-700 text-white py-4 rounded-full font-bold hover:bg-zinc-900 transition-colors">
+                        Download for Mac
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="py-40 text-center px-6 relative overflow-hidden">
+        <div class="absolute inset-0 bg-cover bg-center opacity-10 pointer-events-none" style="background-image: url('images/hero-bg.jpg');"></div>
+        <div class="relative z-10">
+            <blockquote class="text-3xl md:text-5xl font-black italic mb-16 leading-snug max-w-5xl mx-auto text-zinc-200">
+                「プロの喉を、すべての人へ。<br>あなたの情熱だけが、ライセンス。」
+            </blockquote>
+            <p class="text-zinc-700 text-[10px] tracking-[0.5em] uppercase">VO-SE Project 2026 | No Fortress, No Chains.</p>
+        </div>
+    </footer>
+
+    <script>
+        // 代表、この関数が「クリックの瞬間」を記録します。
+        function trackDownload(platform) {
+            // 現在の日時を取得
+            const now = new Date().toLocaleString('ja-JP');
+        
+            // 1. ローカルストレージ（ブラウザ）に記録（簡易的な自分用）
+            let count = localStorage.getItem('vose_dl_' + platform) || 0;
+            count = parseInt(count) + 1;
+            localStorage.setItem('vose_dl_' + platform, count);
+        
+            console.log(`[Aural Monitor] ${platform} download tracked. Total: ${count}`);
+
+            // 2. Google Analytics(GA4)を導入している場合、自動でイベントを送信
+            if (typeof gtag === 'function') {
+                gtag('event', 'download', {
+                    'event_category': 'software',
+                    'event_label': platform,
+                    'value': 1
+                });
+            }
+         }
+
+        // HTML上のボタンにイベントを紐付けます
+        document.addEventListener('DOMContentLoaded', () => {
+            // Windowsボタンの取得（セレクタで指定）
+            const winBtn = document.querySelector('a[href*="VO-SE_PRO_Win.exe"]');
+            if (winBtn) {
+                winBtn.addEventListener('click', () => trackDownload('Windows'));
+            }
+
+            // Macボタンの取得
+            const macBtn = document.querySelector('a[href*="VO-SE_PRO_Mac.zip"]');
+            if (macBtn) {
+                macBtn.addEventListener('click', () => trackDownload('macOS'));
+            }
+        });
+        document.addEventListener("DOMContentLoaded", () => {
+        const targets = document.querySelectorAll(".js-animate");
+
+        const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+        if (entry.isIntersecting) {
+            entry.target.classList.add("is-animated");
+            observer.unobserve(entry.target); // 一回だけならこれ
+        }
+        });
+  }, {
+    threshold: 1 // 100%見えたら発火
+  });
+
+  targets.forEach(target => observer.observe(target));
+});
+
+    document.addEventListener("DOMContentLoaded", () => {
+  const targets = document.querySelectorAll(".js-burst");
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add("is-animated");
+        observer.unobserve(entry.target);
+      }
+    });
+  }, {
+    threshold: 0.3
+  });
+
+  targets.forEach(target => observer.observe(target));
+});
+document.addEventListener("DOMContentLoaded", () => {
+  const targets = document.querySelectorAll(".js-animate");
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add("is-animated");
+        observer.unobserve(entry.target);
+      }
+    });
+  }, {
+    threshold: 0.3
+  });
+
+  targets.forEach(target => observer.observe(target));
+});
+</script>
+<script>
+  
+</script>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const target = document.querySelector(".js-split");
+  const delay = 0.6;
+  // ① 文字を分解してspan化
+  const chars = target.textContent.trim().split("");
+  target.innerHTML = chars
+    .map((c, i) => `<span class="char" style="animation-delay:${delay + i * 0.08}s">${c}</span>`)
+    .join("");
+
+  const charSpans = target.querySelectorAll(".char");
+
+  // ② スクロール検知
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (!entry.isIntersecting) return;
+
+      charSpans.forEach(el => {
+        el.classList.add("is-animated");
+      });
+
+      observer.unobserve(target);
+    });
+  }, {
+    threshold: 0.3
+  });
+
+  observer.observe(target);
+});
+</script>
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const target = document.querySelector(".js-split2");
+  const delay = 0.6;
+  // ① 文字を分解してspan化
+  const chars = target.textContent.trim().split("");
+  target.innerHTML = chars
+    .map((c, i) => `<span class="char" style="animation-delay:${delay + i * 0.08}s">${c}</span>`)
+    .join("");
+
+  const charSpans = target.querySelectorAll(".char");
+
+  // ② スクロール検知
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (!entry.isIntersecting) return;
+
+      charSpans.forEach(el => {
+        el.classList.add("is-animated");
+      });
+
+      observer.unobserve(target);
+    });
+  }, {
+    threshold: 0.3
+  });
+
+  observer.observe(target);
+});
+</script>
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const target = document.querySelector(".js-split3");
+  const delay = 0.6;
+  // ① 文字を分解してspan化
+  const chars = target.textContent.trim().split("");
+  target.innerHTML = chars
+    .map((c, i) => `<span class="char" style="animation-delay:${delay + i * 0.08}s">${c}</span>`)
+    .join("");
+
+  const charSpans = target.querySelectorAll(".char");
+
+  // ② スクロール検知
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (!entry.isIntersecting) return;
+
+      charSpans.forEach(el => {
+        el.classList.add("is-animated");
+      });
+
+      observer.unobserve(target);
+    });
+  }, {
+    threshold: 0.3
+  });
+
+  observer.observe(target);
+});
+</script>
+<script>
+    function copyCode() {
+      const code = document.getElementById("code").innerText;
+      navigator.clipboard.writeText(code);
+    }
+  </script>
+<script>
+  const color_btns = document.querySelectorAll('.colors button');
+const output = document.querySelector('.output');
+
+const target = document.querySelectorAll('.text');
+
+for (let key in color_btns) {
+  if (color_btns.hasOwnProperty(key)) {
+    color_btns[key].addEventListener('click', change_color);
+  }
+}
+
+function change_color(e) {
+  let rgb = this.style.backgroundColor;
+  
+  let rgb_num = rgb.replace(/rgb|\(|\)/g, '');;
+
+  let hex = rgb2hex(rgb);
+
+  // color = color.replace(/rgb|\(|\)/g, '');
+  // console.log(this.style.backgroundColor);
+  // color = 'rgba(' + color + ', 0.5)';
+  target[0].style.backgroundImage = `linear-gradient( 70deg, ` + rgb + ` 45%,#FFF 50%, ` + rgb + ` 55%)`;
+  target[1].style.backgroundImage = `linear-gradient( 70deg, ` + rgb + ` 45%,#FFF 50%, ` + rgb + ` 55%)`;
+
+output.innerHTML = `` + hex + `<br>` + rgb + ``;
+  //target[1].style.background = color;
+  // target.style.outlineColor = color;
+}
+
+
+//rgb to hex
+function rgb2hex(col){
+  return "#" + col.match(/\d+/g).map(function(a){return ("0" + parseInt(a).toString(16)).slice(-2)}).join("");
+}
+</script>
+<script>
+const btn = document.querySelector(".btn");
+const content = document.querySelector(".content");
+
+btn.addEventListener("click", () => {
+  if (content.style.maxHeight) {
+    content.style.maxHeight = null;
+  } else {
+    content.style.maxHeight = content.scrollHeight + "px";
+  }
+});
+</script>
+</body>
+</html>
