@@ -59,28 +59,33 @@ jobs:
         run: |
           python modules/tools/pack_voice.py
           ls -l src/core/voice_data.h
-          
       - name: 🛠️ Native Core Compilation (Unified Build)
         shell: bash
         run: |
           mkdir -p bin
           SOURCES=$(find src -type f \( -name "*.cpp" -o -name "*.c" -o -name "*.cc" \))
+          # インクルードパスの設定
           ALL_INC_DIRS="-I sdk/ffmpeg/include $(find src include -type d | sed 's/^/-I /' | tr '\n' ' ')"
           
           echo "--- 🔍 Found Sources ---"
           echo "$SOURCES"
 
           if [ "${{ matrix.os }}" = "macos-latest" ]; then
+            # macOS: ライブラリパス (-L) と 各ライブラリ (-l) を指定
             clang++ -std=c++17 -shared -fPIC \
               $SOURCES \
               $ALL_INC_DIRS \
+              -Lsdk/ffmpeg/macos_arm64 \
+              -lavformat -lavcodec -lavutil -lswscale -lswresample \
               -O3 -o bin/libvo_se_cut.dylib \
               -framework Foundation
           else
-            # Windows (MinGW)
+            # Windows: ライブラリパス (-L) と 各ライブラリ (-l) を指定
             g++ -std=c++17 -shared -fPIC \
               $SOURCES \
               $ALL_INC_DIRS \
+              -Lsdk/ffmpeg/win_x64 \
+              -lavformat -lavcodec -lavutil -lswscale -lswresample \
               -O3 -o bin/libvo_se_cut.dll \
               -Wl,--out-implib,bin/libvo_se_cut.a
           fi
