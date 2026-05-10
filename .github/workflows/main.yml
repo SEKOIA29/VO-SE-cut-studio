@@ -33,7 +33,10 @@ jobs:
 
       - name: Install System Dependencies (macOS)
         if: matrix.os == 'macos-latest'
-        run: brew install libsndfile
+        run: |
+          brew install ffmpeg pkg-config
+
+
 
       - name: Install Hardened Dependencies
         shell: bash
@@ -71,16 +74,17 @@ jobs:
           echo "$SOURCES"
 
           if [ "${{ matrix.os }}" = "macos-latest" ]; then
-            # macOS: ライブラリパス (-L) と 各ライブラリ (-l) を指定
+            # pkg-config を使って Mac 本体の FFmpeg パスを自動取得
+            FFMPEG_FLAGS=$(pkg-config --cflags --libs libavformat libavcodec libavutil swscale swresample)
+            
             clang++ -std=c++17 -shared -fPIC \
               $SOURCES \
               $ALL_INC_DIRS \
-              -Lsdk/ffmpeg/macos_arm64 \
-              -lavformat -lavcodec -lavutil -lswscale -lswresample \
+              $FFMPEG_FLAGS \
               -O3 -o bin/libvo_se_cut.dylib \
               -framework Foundation
           else
-            # Windows: ライブラリパス (-L) と 各ライブラリ (-l) を指定
+            # Windows は代表が用意した sdk/ffmpeg/win_x64 を使用
             g++ -std=c++17 -shared -fPIC \
               $SOURCES \
               $ALL_INC_DIRS \
