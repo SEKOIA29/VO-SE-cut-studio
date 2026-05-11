@@ -13,7 +13,7 @@ class FrameInfo(ctypes.Structure):
         ("rgb_data_size", ctypes.c_size_t)
     ]
 
-class VoseEngine:
+class VideoEngine:
     def __init__(self, lib_path: str = "./libvideo_engine.dylib"):
         # ライブラリのロード (macOSなら .dylib, Linuxなら .so)
         if not os.path.exists(lib_path):
