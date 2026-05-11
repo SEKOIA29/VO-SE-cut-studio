@@ -32,6 +32,20 @@ extern "C" {
 
 namespace vose {
 
+
+// 1. hasAudio の実体を追加
+bool VideoEngine::hasAudio() const {
+    return audioIdx_ >= 0;
+}
+
+// 2. EDL::deserialize の実体を追加
+// (現状は簡易実装として常にtrueを返す形にしていますが、後ほどJSON解析を入れられます)
+bool EDL::deserialize(const std::string& json_str) {
+    if (json_str.empty()) return false;
+    // TODO: ここに nlohmann/json 等を使った解析ロジックを将来的に実装
+    return true; 
+}
+
 // ─── ローカルユーティリティ ────────────────────────────────────────────
 
 static std::string avErr(int errnum) {
