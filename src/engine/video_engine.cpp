@@ -183,12 +183,3 @@ public:
 
 } // namespace vose
 
-int main(int argc, char* argv[]) {
-    if (argc < 2) {
-        std::cout << "Usage: ./video_engine <video_path>" << std::endl;
-        return 1;
-    }
-
-    vose::VideoInspector::inspect(argv[1]);
-    return 0;
-}
