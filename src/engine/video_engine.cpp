@@ -488,8 +488,10 @@ bool VideoEngine::exportFromEDL(const EDL& edl, const std::string& outPath) {
             return false;
         }
     }
-    avformat_write_header(outFmt, nullptr);
-
+    int write_header_ret = avformat_write_header(outFmt, nullptr);
+    if (write_header_ret < 0) {
+        VOSE_ERR("Failed to write header: " << avErr(write_header_ret));
+    }
     // ── 各セグメントをパケット単位でコピー ──
     // 出力PTSの連続性を保つためにオフセットを追跡する
     std::vector<int64_t> ptsOffsets(outIdx, 0);
@@ -821,7 +823,10 @@ bool VideoEngine::exportWithVideoToolbox(const EDL& edl,
             return false;
         }
     }
-    avformat_write_header(outFmt, nullptr);
+    int write_header_ret = avformat_write_header(outFmt, nullptr);
+    if (write_header_ret < 0) {
+        VOSE_ERR("Failed to write header: " << avErr(write_header_ret));
+    }
 
     // ── ピクセルフォーマット変換器（デコード結果→YUV420P） ──
     SwsContext* encSws = sws_getContext(
