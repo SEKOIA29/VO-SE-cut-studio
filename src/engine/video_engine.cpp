@@ -1,9 +1,9 @@
 // ╔══════════════════════════════════════════════════════════════════╗
-// ║  VOSE Video Engine — video_engine.cpp                           ║
-// ║  Phase 1: Core Integration (frame/waveform extraction)          ║
-// ║  Phase 2: Logic Design    (keyframe index, EDL export)          ║
-// ║  Phase 4: VO-SE Subtitles (ASS burn-in via avfilter)           ║
-// ║  Phase 5: HW Optimization (Apple VideoToolbox encoder)          ║
+// ║  VOSE Video Engine — video_engine.cpp                            ║
+// ║  Phase 1: Core Integration (frame/waveform extraction)           ║
+// ║  Phase 2: Logic Design    (keyframe index, EDL export)           ║
+// ║  Phase 4: VO-SE Subtitles (ASS burn-in via avfilter)             ║
+// ║  Phase 5: HW Optimization (Apple VideoToolbox encoder)           ║
 // ╚══════════════════════════════════════════════════════════════════╝
 #include "video_engine.hpp"
 
