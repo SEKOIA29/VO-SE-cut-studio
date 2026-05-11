@@ -70,23 +70,22 @@ jobs:
           ALL_INC_DIRS="-I sdk/ffmpeg/include $(find src include -type d | sed 's/^/-I /' | tr '\n' ' ')"
 
           if [ "${{ matrix.os }}" = "macos-latest" ]; then
-            # 1. 念のためHomebrew側のパスを追加
-            export PKG_CONFIG_PATH="/opt/homebrew/opt/ffmpeg/lib/pkgconfig:$PKG_CONFIG_PATH"
-            
-            # 2. それでもダメな時のために、リポジトリ内のsdkフォルダも追加 (Image 8の場所)
-            export PKG_CONFIG_PATH="$(pwd)/sdk/ffmpeg/macos_arm64/pkgconfig:$PKG_CONFIG_PATH"
-
-            # フラグを取得
-            FFMPEG_FLAGS=$(pkg-config --cflags --libs libavformat libavcodec libavutil swscale swresample)
+            # pkg-config に頼らず、直接ライブラリファイルを指定する
+            # ※パスは Image 8 の構成に基づいています
+            LIB_DIR="sdk/ffmpeg/lib"
             
             clang++ -std=c++17 -shared -fPIC \
               $SOURCES \
               $ALL_INC_DIRS \
-              $FFMPEG_FLAGS \
+              $LIB_DIR/libavformat.dll.a \
+              $LIB_DIR/libavcodec.dll.a \
+              $LIB_DIR/libavutil.dll.a \
+              $LIB_DIR/libswscale.dll.a \
+              $LIB_DIR/libswresample.dll.a \
               -O3 -o bin/libvo_se_cut.dylib \
               -framework Foundation
           else
-            # Windows: 既存の設定を維持
+            # Windows: 既存の動作する設定
             g++ -std=c++17 -shared -fPIC \
               $SOURCES \
               $ALL_INC_DIRS \
