@@ -183,12 +183,19 @@ bool VideoEngine::seekAndFlush(double timeSec) {
 
 // ─── SwsContext のキャッシュ生成 ───────────────────────────────────
 
-SwsContext* VideoEngine::makeSwsCtx(int w, int h, AVPixelFormat srcFmt) {
-    // 既存のコンテキストを解放して再生成（サイズや形式が変わる可能性）
-    sws_freeContext(swsCtx_);
-    swsCtx_ = sws_getContext(w, h, srcFmt,
+SwsContext* VideoEngine::makeSwsCtx(int w, int h, int srcFmt) {
+    
+    // 既存のコンテキストを解放
+    if (swsCtx_) {
+        sws_freeContext(swsCtx_);
+        swsCtx_ = nullptr;
+    }
+
+    // 引数の srcFmt を AVPixelFormat にキャストして FFmpeg 関数に渡す
+    swsCtx_ = sws_getContext(w, h, static_cast<AVPixelFormat>(srcFmt),
                              w, h, AV_PIX_FMT_RGB24,
                              SWS_BILINEAR, nullptr, nullptr, nullptr);
+                             
     return swsCtx_;
 }
 
