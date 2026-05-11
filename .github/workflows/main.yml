@@ -67,14 +67,13 @@ jobs:
         run: |
           mkdir -p bin
           SOURCES=$(find src -type f \( -name "*.cpp" -o -name "*.c" -o -name "*.cc" \))
-          # インクルードパスの設定
           ALL_INC_DIRS="-I sdk/ffmpeg/include $(find src include -type d | sed 's/^/-I /' | tr '\n' ' ')"
-          
-          echo "--- 🔍 Found Sources ---"
-          echo "$SOURCES"
 
           if [ "${{ matrix.os }}" = "macos-latest" ]; then
-            # pkg-config を使って Mac 本体の FFmpeg パスを自動取得
+            # Homebrewのパスをpkg-configに教える
+            export PKG_CONFIG_PATH="/opt/homebrew/opt/ffmpeg/lib/pkgconfig:$PKG_CONFIG_PATH"
+            
+            # フラグを取得（swscale, swresample を含む）
             FFMPEG_FLAGS=$(pkg-config --cflags --libs libavformat libavcodec libavutil swscale swresample)
             
             clang++ -std=c++17 -shared -fPIC \
@@ -84,7 +83,7 @@ jobs:
               -O3 -o bin/libvo_se_cut.dylib \
               -framework Foundation
           else
-            # Windows は代表が用意した sdk/ffmpeg/win_x64 を使用
+            # Windows: 代表が用意した sdk/ffmpeg/win_x64 を使用
             g++ -std=c++17 -shared -fPIC \
               $SOURCES \
               $ALL_INC_DIRS \
