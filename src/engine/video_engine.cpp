@@ -1,12 +1,14 @@
 #include <iostream>
 #include <string>
 #include <memory>
+#include <iomanip>
 
 // FFmpeg C-APIのインクルード
 extern "C" {
 #include <libavformat/avformat.h>
 #include <libavcodec/avcodec.h>
 #include <libavutil/avutil.h>
+#include <libavutil/timestamp.h>
 }
 
 namespace vose {
