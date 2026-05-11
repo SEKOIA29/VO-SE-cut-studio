@@ -416,6 +416,7 @@ class PreviewView(QGraphicsView):
 class CutStudioMain(QMainWindow):
     def __init__(self) -> None:
         super().__init__()
+        self.video = video_engine.VideoEngine("./libvideo_engine.dylib") #映像エンジンの初期化
         self.setWindowTitle("VO-SE Cut Studio - Early Alpha")
         self.resize(1280, 800)
 
