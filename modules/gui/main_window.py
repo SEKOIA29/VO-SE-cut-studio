@@ -16,6 +16,12 @@ import traceback
 from typing import Any, List, Dict, Optional, Tuple, TYPE_CHECKING
 
 # =================================================
+# ファイルインポート
+# =================================================
+
+import video_engine # 映像編集用
+
+# =================================================
 # PySide6
 # =================================================
 from PySide6.QtWidgets import (
