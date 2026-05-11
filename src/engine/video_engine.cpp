@@ -5,7 +5,6 @@
 // ║  Phase 4: VO-SE Subtitles (ASS burn-in via avfilter)           ║
 // ║  Phase 5: HW Optimization (Apple VideoToolbox encoder)          ║
 // ╚══════════════════════════════════════════════════════════════════╝
-
 #include "video_engine.hpp"
 
 #include <iostream>
@@ -17,7 +16,16 @@
 #include <cassert>
 #include <iomanip>
 
+// FFmpeg の具体的な定義を読み込む（これが足りなかった）
 extern "C" {
+#include <libavformat/avformat.h>
+#include <libavcodec/avcodec.h>
+#include <libavutil/avutil.h>
+#include <libavutil/imgutils.h>
+#include <libavutil/opt.h>
+#include <libavutil/error.h>
+#include <libswscale/swscale.h>
+#include <libswresample/swresample.h>
 #include <libavutil/channel_layout.h>
 #include <libavutil/mathematics.h>
 }
