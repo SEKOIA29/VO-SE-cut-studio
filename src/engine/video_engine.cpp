@@ -126,3 +126,69 @@ int main() {
     std::cout << "\nEngine shutdown sequence completed." << std::endl;
     return 0;
 }
+
+class VideoInspector {
+public:
+    static void inspect(const std::string& filename) {
+        AVFormatContext* fmt_ctx = nullptr;
+
+        // 1. ファイルを開く
+        if (avformat_open_input(&fmt_ctx, filename.c_str(), nullptr, nullptr) < 0) {
+            std::cerr << "[Error] Could not open file: " << filename << std::endl;
+            return;
+        }
+
+        // 2. ストリーム情報を取得
+        if (avformat_find_stream_info(fmt_ctx, nullptr) < 0) {
+            std::cerr << "[Error] Could not find stream information." << std::endl;
+            avformat_close_input(&fmt_ctx);
+            return;
+        }
+
+        // 3. 基本情報の出力 (Appleスタイルのクリーンな出力)
+        std::cout << "\n--- Media Inspection: " << filename << " ---" << std::endl;
+        
+        // 再生時間 (duration) は微妙な計算が必要
+        if (fmt_ctx->duration != AV_NOPTS_VALUE) {
+            double secs = fmt_ctx->duration / (double)AV_TIME_BASE;
+            std::cout << "Duration   : " << std::fixed << std::setprecision(2) << secs << " seconds" << std::endl;
+        }
+
+        std::cout << "Format     : " << fmt_ctx->iformat->long_name << std::endl;
+        std::cout << "Streams    : " << fmt_ctx->nb_streams << std::endl;
+
+        // 4. 各ストリーム（映像・音声）の詳細
+        for (unsigned int i = 0; i < fmt_ctx->nb_streams; i++) {
+            AVStream* stream = fmt_ctx->streams[i];
+            AVCodecParameters* codec_par = stream->codecpar;
+
+            std::cout << "\n[Stream #" << i << "]" << std::endl;
+            std::cout << "  Type     : " << av_get_media_type_string(codec_par->codec_type) << std::endl;
+            
+            if (codec_par->codec_type == AVMEDIA_TYPE_VIDEO) {
+                std::cout << "  Codec    : " << avcodec_get_name(codec_par->codec_id) << std::endl;
+                std::cout << "  Res      : " << codec_par->width << "x" << codec_par->height << std::endl;
+            } else if (codec_par->codec_type == AVMEDIA_TYPE_AUDIO) {
+                std::cout << "  Codec    : " << avcodec_get_name(codec_par->codec_id) << std::endl;
+                std::cout << "  Channels : " << codec_par->ch_layout.nb_channels << std::endl;
+                std::cout << "  SampleRt : " << codec_par->sample_rate << " Hz" << std::endl;
+            }
+        }
+
+        std::cout << "-------------------------------------------\n" << std::endl;
+
+        avformat_close_input(&fmt_ctx);
+    }
+};
+
+} // namespace vose
+
+int main(int argc, char* argv[]) {
+    if (argc < 2) {
+        std::cout << "Usage: ./video_engine <video_path>" << std::endl;
+        return 1;
+    }
+
+    vose::VideoInspector::inspect(argv[1]);
+    return 0;
+}
