@@ -12,6 +12,8 @@ struct AVCodecContext;
 struct SwsContext;
 struct AVRational;
 
+enum AVPixelFormat : int;
+
 namespace vose {
 
 /**
@@ -142,7 +144,7 @@ private:
 
     // 内部ユーティリティ
     bool seekAndFlush(double timeSec);
-    SwsContext* makeSwsCtx(int w, int h, int srcFmt); // srcFmtはAVPixelFormatだが前方宣言のためint
+    SwsContext* makeSwsCtx(int w, int h, AVPixelFormat srcFmt); // srcFmtはAVPixelFormatだが前方宣言のためint
     double toSeconds(int64_t pts, AVRational tb) const;
     void reportProgress(double p, const std::string& stage);
 };
