@@ -67,25 +67,24 @@ jobs:
         run: |
           mkdir -p bin
           SOURCES=$(find src -type f \( -name "*.cpp" -o -name "*.c" -o -name "*.cc" \))
-          ALL_INC_DIRS="-I sdk/ffmpeg/include $(find src include -type d | sed 's/^/-I /' | tr '\n' ' ')"
-
+          
           if [ "${{ matrix.os }}" = "macos-latest" ]; then
-            # pkg-config に頼らず、直接ライブラリファイルを指定する
-            # ※パスは Image 8 の構成に基づいています
-            LIB_DIR="sdk/ffmpeg/lib"
+            # 1. Homebrewで入れたFFmpegのパスを強制的に特定
+            FFMPEG_PATH=$(brew --prefix ffmpeg)
             
+            # 2. パスを直接指定してコンパイル
+            # sdk/ffmpeg/include ではなく、システムのヘッダーとライブラリを優先します
             clang++ -std=c++17 -shared -fPIC \
               $SOURCES \
-              $ALL_INC_DIRS \
-              $LIB_DIR/libavformat.dll.a \
-              $LIB_DIR/libavcodec.dll.a \
-              $LIB_DIR/libavutil.dll.a \
-              $LIB_DIR/libswscale.dll.a \
-              $LIB_DIR/libswresample.dll.a \
+              -I$FFMPEG_PATH/include \
+              $(find src include -type d | sed 's/^/-I /' | tr '\n' ' ') \
+              -L$FFMPEG_PATH/lib \
+              -lavformat -lavcodec -lavutil -lswscale -lswresample \
               -O3 -o bin/libvo_se_cut.dylib \
               -framework Foundation
           else
-            # Windows: 既存の動作する設定
+            # Windows: 既存の sdk/ffmpeg/win_x64 を使用
+            ALL_INC_DIRS="-I sdk/ffmpeg/include $(find src include -type d | sed 's/^/-I /' | tr '\n' ' ')"
             g++ -std=c++17 -shared -fPIC \
               $SOURCES \
               $ALL_INC_DIRS \
