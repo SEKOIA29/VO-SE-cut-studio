@@ -638,11 +638,19 @@ class PreviewView(QGraphicsView):
         self._scene.addItem(item)
         self.current_character = item
 
-    def wheelEvent(self, event) -> None:
-        if event.modifiers() & Qt.KeyboardModifier.ControlModifier:
-            factor = 1.15 if event.angleDelta().y() > 0 else 0.87
-            self.scale(factor, factor)
+    def wheelEvent(self, event: QWheelEvent) -> None:
+        # 1. 修飾キーの取得
+        modifiers = event.modifiers()
+        
+        # 2. Controlキーが押されている場合（ズーム処理）
+        if modifiers & Qt.KeyboardModifier.ControlModifier:
+            delta_vec = event.angleDelta()
+            if delta_vec is not None:
+                # y() の値によって拡大・縮小率を決定
+                factor = 1.15 if delta_vec.y() > 0 else 0.87
+                self.scale(factor, factor)
         else:
+            # 3. それ以外は標準のスクロール挙動
             super().wheelEvent(event)
 
 
