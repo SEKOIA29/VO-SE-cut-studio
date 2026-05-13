@@ -760,7 +760,13 @@ class CutStudioMain(QMainWindow):
             QPushButton:hover  { background-color: #3a3a3c; color: #ffffff; }
             QPushButton:pressed { background-color: #2c2c2e; }
         """
-        for icon, tip in [("⏮", "先頭"), ("⏪", "戻る"), ("▶", "再生"), ("⏩", "進む"), ("⏭", "末尾")]:
+        controls = [
+            ("⏮", "先頭"), ("⏪", "戻る"), ("▶", "再生"), 
+            ("⏩", "進む"), ("⏭", "末尾")
+        ]
+        for icon, tip in controls:
+            btn = QPushButton(icon)
+            btn.setToolTip(tip)
             btn = QPushButton(icon)
             btn.setToolTip(tip)
             btn.setStyleSheet(btn_style)
