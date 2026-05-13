@@ -657,26 +657,34 @@ class CutStudioMain(QMainWindow):
         self.resize(1440, 900)
         self.setMinimumSize(960, 600)
 
-        # 映像エンジン
+        # 1. 映像エンジンの初期化（型を明示）
+        self.video: Optional[video_engine.VideoEngine] = None
         try:
-            self.video: Optional[video_engine.VideoEngine] = video_engine.VideoEngine()
+            # video_engine.py 側でライブラリロードに失敗すると例外が出る想定
+            self.video = video_engine.VideoEngine()
         except Exception as e:
-            print(f"⚠️ VideoEngine: {e}")
-            self.video = None
+            print(f"⚠️ VideoEngine Initialization Failed: {e}")
 
-        # VO-SE エンジン
-        self.bridge       = VOSEBridge()
-        self.analyzer: Optional[IntonationAnalyzer] = (
-            IntonationAnalyzer() if is_engine_available else None
-        )
-        self.talk_manager: Optional[TalkManager] = (
-            TalkManager() if is_engine_available else None
-        )
+        # 2. VO-SE エンジン（Bridge の存在を保証）
+        self.bridge: VOSEBridge = VOSEBridge()
+        
+        # 3. エンジンが利用可能な場合のみ各マネージャーを生成
+        self.analyzer: Optional[IntonationAnalyzer] = None
+        self.talk_manager: Optional[TalkManager] = None
 
-        # プレビュー（_init_ui より先に生成）
+        if is_engine_available:
+            self.analyzer = IntonationAnalyzer()
+            self.talk_manager = TalkManager()
+
+        # 4. プレビュー
         self.video_preview = PreviewView()
 
         self._init_ui()
+
+    # Pyright エラー対策：安全にビデオエンジンを呼ぶためのプロパティ
+    @property
+    def has_video_engine(self) -> bool:
+        return self.video is not None
 
     # ── UI 構築 ───────────────────────────────────────────────
 
