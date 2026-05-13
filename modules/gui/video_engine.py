@@ -1,33 +1,35 @@
-# video_engine.py
 import ctypes
 import os
 from typing import Optional, List
 
-
 class VideoEngine:
     def __init__(self, lib_path: str = "./libvideo_engine.dylib") -> None:
+        self.lib: Optional[ctypes.CDLL] = None
+        self.handle: Optional[ctypes.c_void_p] = None
+
+        # 1. まずファイルの存在を確認
         if not os.path.exists(lib_path):
-            # クラッシュではなく警告にとどめ、メソッド呼び出し時に安全に失敗させる
             print(f"⚠️  Engine library not found: {lib_path}")
-            self.lib = None
-            self.handle = None
             return
 
-        self.lib = ctypes.CDLL(lib_path)
-        self._setup_signatures()
-        self.handle = self.lib.vose_create()
+        try:
+            # 2. ロードを試行
+            lib = ctypes.CDLL(lib_path)
+            # 3. 関数シグネチャを確定（self.lib をセットする前に設定を済ませる）
+            self._setup_signatures(lib)
+            
+            self.lib = lib
+            self.handle = lib.vose_create()
+        except Exception as e:
+            print(f"⚠️  Failed to load engine: {e}")
 
-    # ------------------------------------------------------------------
-    # C 関数シグネチャの一括定義
-    # ------------------------------------------------------------------
-    def _setup_signatures(self) -> None:
-        lib = self.lib
-
+    def _setup_signatures(self, lib: ctypes.CDLL) -> None:
+        """引数として受け取った lib に対してシグネチャを定義する"""
         lib.vose_create.argtypes = []
         lib.vose_create.restype  = ctypes.c_void_p
 
         lib.vose_destroy.argtypes = [ctypes.c_void_p]
-        lib.vose_destroy.restype  = None                     # ← 追加（必須）
+        lib.vose_destroy.restype  = None
 
         lib.vose_load.argtypes = [ctypes.c_void_p, ctypes.c_char_p]
         lib.vose_load.restype  = ctypes.c_int
@@ -73,83 +75,76 @@ class VideoEngine:
         lib.vose_nearest_keyframe.restype  = ctypes.c_double
 
     # ------------------------------------------------------------------
-    # ガード用ヘルパー
-    # ------------------------------------------------------------------
-    def _ok(self) -> bool:
-        return self.lib is not None and self.handle is not None
-
-    # ------------------------------------------------------------------
-    # 公開 API
+    # 公開 API (Walrus Operator で型チェックと実行を同時に行う)
     # ------------------------------------------------------------------
     def load_video(self, path: str) -> bool:
-        if not self._ok():
-            return False
-        return self.lib.vose_load(self.handle, path.encode("utf-8")) == 1
+        if (lib := self.lib) and (h := self.handle):
+            return lib.vose_load(h, path.encode("utf-8")) == 1
+        return False
 
     @property
     def duration(self) -> float:
-        return self.lib.vose_duration(self.handle) if self._ok() else 0.0
+        if (lib := self.lib) and (h := self.handle):
+            return float(lib.vose_duration(h))
+        return 0.0
 
     @property
     def width(self) -> int:
-        return self.lib.vose_width(self.handle) if self._ok() else 0
+        if (lib := self.lib) and (h := self.handle):
+            return int(lib.vose_width(h))
+        return 0
 
     @property
     def height(self) -> int:
-        return self.lib.vose_height(self.handle) if self._ok() else 0
+        if (lib := self.lib) and (h := self.handle):
+            return int(lib.vose_height(h))
+        return 0
 
     @property
     def fps(self) -> float:
-        return self.lib.vose_fps(self.handle) if self._ok() else 0.0
+        if (lib := self.lib) and (h := self.handle):
+            return float(lib.vose_fps(h))
+        return 0.0
 
     @property
     def has_audio(self) -> bool:
-        return self._ok() and self.lib.vose_has_audio(self.handle) == 1
+        if (lib := self.lib) and (h := self.handle):
+            return lib.vose_has_audio(h) == 1
+        return False
 
     def save_preview(self, time_sec: float, output_path: str) -> bool:
-        if not self._ok():
-            return False
-        return self.lib.vose_save_frame(
-            self.handle, time_sec, output_path.encode("utf-8")
-        ) == 1
+        if (lib := self.lib) and (h := self.handle):
+            return lib.vose_save_frame(h, time_sec, output_path.encode("utf-8")) == 1
+        return False
 
     def extract_waveform(self, chunks: int = 512) -> List[float]:
-        """ピーク振幅の配列を返す（chunks 個）"""
-        if not self._ok():
-            return []
-        buf = (ctypes.c_float * chunks)()
-        n = self.lib.vose_waveform(self.handle, buf, chunks, chunks)
-        return list(buf[:n])
+        if (lib := self.lib) and (h := self.handle):
+            buf = (ctypes.c_float * chunks)()
+            n = lib.vose_waveform(h, buf, chunks, chunks)
+            return list(buf[:n])
+        return []
 
     def export_edl(self, edl_json: str, out_path: str) -> bool:
-        if not self._ok():
-            return False
-        return self.lib.vose_export_edl(
-            self.handle, edl_json.encode("utf-8"), out_path.encode("utf-8")
-        ) == 1
+        if (lib := self.lib) and (h := self.handle):
+            return lib.vose_export_edl(h, edl_json.encode("utf-8"), out_path.encode("utf-8")) == 1
+        return False
 
     def export_hw(self, edl_json: str, out_path: str, quality: int = 23) -> bool:
-        """Apple VideoToolbox（または libx264）でエンコードしてエクスポート"""
-        if not self._ok():
-            return False
-        return self.lib.vose_export_hw(
-            self.handle, edl_json.encode("utf-8"), out_path.encode("utf-8"), quality
-        ) == 1
+        if (lib := self.lib) and (h := self.handle):
+            return lib.vose_export_hw(h, edl_json.encode("utf-8"), out_path.encode("utf-8"), quality) == 1
+        return False
 
     def build_keyframe_index(self) -> int:
-        """キーフレームインデックスを構築し、検出数を返す"""
-        if not self._ok():
-            return 0
-        return self.lib.vose_build_keyframe_index(self.handle)
+        if (lib := self.lib) and (h := self.handle):
+            return int(lib.vose_build_keyframe_index(h))
+        return 0
 
     def nearest_keyframe(self, time_sec: float) -> float:
-        """指定時刻以前の最近傍キーフレーム時刻を返す"""
-        if not self._ok():
-            return time_sec
-        return self.lib.vose_nearest_keyframe(self.handle, time_sec)
+        if (lib := self.lib) and (h := self.handle):
+            return float(lib.vose_nearest_keyframe(h, time_sec))
+        return time_sec
 
-    # ------------------------------------------------------------------
     def __del__(self) -> None:
-        if self._ok():
-            self.lib.vose_destroy(self.handle)
+        if (lib := self.lib) and (h := self.handle):
+            lib.vose_destroy(h)
             self.handle = None
