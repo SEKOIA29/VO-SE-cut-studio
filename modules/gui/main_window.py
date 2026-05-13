@@ -14,6 +14,8 @@ from typing import Any, List, Dict, Optional, Tuple, TYPE_CHECKING
 
 import video_engine
 
+
+
 from PySide6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QSplitter, QTextEdit, QPushButton, QLabel, QListWidget, QFrame,
@@ -23,7 +25,7 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import Qt, QRect, QRectF, Signal
 from PySide6.QtGui import (
     QColor, QBrush, QPainter, QPen, QFont, QPaintEvent, QMouseEvent,
-    QPixmap, QPainterPath, QFontMetrics, QContextMenuEvent,
+    QPixmap, QPainterPath, QFontMetrics, QContextMenuEvent, QWheelEvent,
 )
 
 # ──────────────────────────────────────────────────────────────
