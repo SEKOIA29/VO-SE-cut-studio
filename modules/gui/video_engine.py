@@ -130,8 +130,15 @@ class VideoEngine:
         return False
 
     def export_hw(self, edl_json: str, out_path: str, quality: int = 23) -> bool:
+        """Apple VideoToolbox（または libx264）でエンコードしてエクスポート"""
         if (lib := self.lib) and (h := self.handle):
-            return lib.vose_export_hw(h, edl_json.encode("utf-8"), out_path.encode("utf-8"), quality) == 1
+            # 100文字を超えないよう、引数を個別に改行
+            return lib.vose_export_hw(
+                h, 
+                edl_json.encode("utf-8"), 
+                out_path.encode("utf-8"), 
+                quality
+            ) == 1
         return False
 
     def build_keyframe_index(self) -> int:
