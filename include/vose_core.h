@@ -54,7 +54,7 @@ extern "C" {
     DLLEXPORT void load_embedded_resource(const char* phoneme, const int16_t* raw_data, int sample_count);
 
     // 2. レンダリング実行関数
-    DLLEXPORT void execute_render(NoteEvent* notes, int note_count, const char* output_path);
+    DLLEXPORT void execute_render(NoteEvent* notes, int note_count, const char* output_path, int mode_flag);
     
     // 3. エンジン管理
     DLLEXPORT float get_engine_version(void);
