@@ -638,7 +638,7 @@ class PreviewView(QGraphicsView):
         self._scene.addItem(item)
         self.current_character = item
 
-   def wheelEvent(self, event: QWheelEvent) -> None:
+    def wheelEvent(self, event: QWheelEvent) -> None:
         # 1. 修飾キーの取得
         modifiers = event.modifiers()
         
@@ -780,7 +780,7 @@ class CutStudioMain(QMainWindow):
             QPushButton:pressed { background-color: #2c2c2e; }
         """
         controls = [
-            ("⏮", "先頭"), ("⏪", "戻る"), ("▶", "再生"), 
+            ("⏮", "先頭"), ("⏪", "戻る"), ("▶", "再生"),
             ("⏩", "進む"), ("⏭", "末尾")
         ]
         for icon, tip in controls:
@@ -996,3 +996,4 @@ if __name__ == "__main__":
     window = CutStudioMain()
     window.show()
     sys.exit(app.exec())
+
