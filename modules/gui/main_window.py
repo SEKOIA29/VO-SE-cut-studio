@@ -153,6 +153,7 @@ class VOSEBridge:
                 ctypes.POINTER(NoteEvent),
                 ctypes.c_int,
                 ctypes.c_char_p,
+                ctypes.c_int
             ]
             self.lib.execute_render.restype = None
             print(f"✅ VO-SE Engine loaded: {lib_path}")
