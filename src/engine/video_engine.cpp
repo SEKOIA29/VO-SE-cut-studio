@@ -4,6 +4,8 @@
 // ║  Phase 2: Logic Design    (keyframe index, EDL export)           ║
 // ║  Phase 4: VO-SE Subtitles (ASS burn-in via avfilter)             ║
 // ║  Phase 5: HW Optimization (Apple VideoToolbox encoder)           ║
+// ║                                                                  ║
+// ║  Phase 1 Fix: EDL::deserialize / getEnabledEntries を完全実装      ║
 // ╚══════════════════════════════════════════════════════════════════╝
 #include "video_engine.hpp"
 
@@ -15,8 +17,8 @@
 #include <cstring>
 #include <cassert>
 #include <iomanip>
+#include <cctype>
 
-// FFmpeg の具体的な定義を読み込む（これが足りなかった）
 extern "C" {
 #include <libavformat/avformat.h>
 #include <libavcodec/avcodec.h>
@@ -32,21 +34,209 @@ extern "C" {
 
 namespace vose {
 
+// ════════════════════════════════════════════════════════════════════
+//  ミニ JSON パーサ  ★新規追加★
+//
+//  外部ライブラリ不要。Python 側 json.dumps() が生成する EDL JSON を
+//  安全にパースする。サポートスキーマ:
+//
+//    [ {"in": 0.0, "out": 5.0, "enabled": true}, ... ]
+//
+//  enabled を省略した場合はデフォルト true として扱う。
+// ════════════════════════════════════════════════════════════════════
 
-// 1. hasAudio の実体を追加
-bool VideoEngine::hasAudio() const {
-    return audioIdx_ >= 0;
-}
+namespace {
 
-// 2. EDL::deserialize の実体を追加
-// (現状は簡易実装として常にtrueを返す形にしていますが、後ほどJSON解析を入れられます)
+class MiniJson {
+public:
+    explicit MiniJson(const std::string& src) : src_(src), pos_(0) {}
+
+    // トップレベルの配列を EDLEntry リストとしてパース
+    std::vector<EDLEntry> parseEdlArray() {
+        std::vector<EDLEntry> result;
+        skipWs();
+        if (pos_ >= src_.size() || src_[pos_] != '[') return result;
+        ++pos_; // '['
+
+        while (true) {
+            skipWs();
+            if (pos_ >= src_.size()) break;
+            if (src_[pos_] == ']') { ++pos_; break; }
+            if (src_[pos_] == ',') { ++pos_; continue; }
+
+            EDLEntry entry;
+            if (!parseObject(entry)) break;
+            result.push_back(entry);
+        }
+        return result;
+    }
+
+private:
+    const std::string& src_;
+    size_t pos_;
+
+    void skipWs() {
+        while (pos_ < src_.size() &&
+               (src_[pos_] == ' '  || src_[pos_] == '\t' ||
+                src_[pos_] == '\n' || src_[pos_] == '\r'))
+            ++pos_;
+    }
+
+    bool parseObject(EDLEntry& entry) {
+        skipWs();
+        if (pos_ >= src_.size() || src_[pos_] != '{') return false;
+        ++pos_; // '{'
+
+        while (true) {
+            skipWs();
+            if (pos_ >= src_.size()) return false;
+            if (src_[pos_] == '}') { ++pos_; return true; }
+            if (src_[pos_] == ',') { ++pos_; continue; }
+
+            std::string key = parseString();
+            skipWs();
+            if (pos_ >= src_.size() || src_[pos_] != ':') return false;
+            ++pos_; // ':'
+            skipWs();
+
+            if      (key == "in")      entry.in_point  = parseNumber();
+            else if (key == "out")     entry.out_point = parseNumber();
+            else if (key == "enabled") entry.enabled   = parseBool();
+            else                       skipValue();
+        }
+    }
+
+    std::string parseString() {
+        skipWs();
+        if (pos_ >= src_.size() || src_[pos_] != '"') return "";
+        ++pos_; // opening "
+        size_t start = pos_;
+        while (pos_ < src_.size() && src_[pos_] != '"') {
+            if (src_[pos_] == '\\') ++pos_; // エスケープをスキップ
+            ++pos_;
+        }
+        std::string result = src_.substr(start, pos_ - start);
+        if (pos_ < src_.size()) ++pos_; // closing "
+        return result;
+    }
+
+    double parseNumber() {
+        skipWs();
+        size_t start = pos_;
+        if (pos_ < src_.size() && src_[pos_] == '-') ++pos_;
+        while (pos_ < src_.size() &&
+               (std::isdigit(static_cast<unsigned char>(src_[pos_])) ||
+                src_[pos_] == '.' || src_[pos_] == 'e' ||
+                src_[pos_] == 'E' || src_[pos_] == '+' || src_[pos_] == '-'))
+            ++pos_;
+        if (pos_ == start) return 0.0;
+        try { return std::stod(src_.substr(start, pos_ - start)); }
+        catch (...) { return 0.0; }
+    }
+
+    bool parseBool() {
+        skipWs();
+        if (src_.compare(pos_, 4, "true")  == 0) { pos_ += 4; return true;  }
+        if (src_.compare(pos_, 5, "false") == 0) { pos_ += 5; return false; }
+        return true;
+    }
+
+    void skipValue() {
+        skipWs();
+        if (pos_ >= src_.size()) return;
+        char c = src_[pos_];
+        if (c == '"')                                          { parseString(); return; }
+        if (c == 't' || c == 'f' || c == 'n') {
+            while (pos_ < src_.size() && std::isalpha(
+                       static_cast<unsigned char>(src_[pos_]))) ++pos_;
+            return;
+        }
+        if (c == '-' || std::isdigit(static_cast<unsigned char>(c))) {
+            parseNumber(); return;
+        }
+        if (c == '{') {
+            ++pos_; int depth = 1;
+            while (pos_ < src_.size() && depth > 0) {
+                char ch = src_[pos_];
+                if      (ch == '{') { ++depth; ++pos_; }
+                else if (ch == '}') { --depth; if (depth > 0) ++pos_; else ++pos_; }
+                else if (ch == '"') { parseString(); }
+                else                { ++pos_; }
+            }
+            return;
+        }
+        if (c == '[') {
+            ++pos_; int depth = 1;
+            while (pos_ < src_.size() && depth > 0) {
+                char ch = src_[pos_];
+                if      (ch == '[') { ++depth; ++pos_; }
+                else if (ch == ']') { --depth; if (depth > 0) ++pos_; else ++pos_; }
+                else if (ch == '"') { parseString(); }
+                else                { ++pos_; }
+            }
+            return;
+        }
+        ++pos_;
+    }
+};
+
+} // anonymous namespace
+
+// ════════════════════════════════════════════════════════════════════
+//  EDL::deserialize  ★スタブを完全実装に置き換え★
+// ════════════════════════════════════════════════════════════════════
+
 bool EDL::deserialize(const std::string& json_str) {
-    if (json_str.empty()) return false;
-    // TODO: ここに nlohmann/json 等を使った解析ロジックを将来的に実装
-    return true; 
+    if (json_str.empty()) {
+        std::cerr << "[VOSE][EDL] JSON が空です\n";
+        return false;
+    }
+
+    MiniJson parser(json_str);
+    auto parsed = parser.parseEdlArray();
+
+    if (parsed.empty()) {
+        std::cerr << "[VOSE][EDL] パース結果が空: "
+                  << json_str.substr(0, 80) << "...\n";
+        return false;
+    }
+
+    entries_.clear();
+    int valid_count = 0;
+
+    for (auto& e : parsed) {
+        if (e.out_point > e.in_point) {
+            entries_.push_back(e);
+            if (e.enabled) ++valid_count;
+        } else {
+            std::cerr << "[VOSE][EDL] 無効エントリをスキップ:"
+                      << " in=" << e.in_point
+                      << " out=" << e.out_point << "\n";
+        }
+    }
+
+    std::cerr << "[VOSE][EDL] パース完了: 有効=" << valid_count
+              << " / 合計=" << entries_.size() << " エントリ\n";
+    return valid_count > 0;
 }
 
-// ─── ローカルユーティリティ ────────────────────────────────────────────
+// ════════════════════════════════════════════════════════════════════
+//  EDL::getEnabledEntries  ★スタブを完全実装に置き換え★
+// ════════════════════════════════════════════════════════════════════
+
+std::vector<EDLEntry> EDL::getEnabledEntries() const {
+    std::vector<EDLEntry> result;
+    result.reserve(entries_.size());
+    for (const auto& e : entries_) {
+        if (e.enabled && e.out_point > e.in_point)
+            result.push_back(e);
+    }
+    return result;
+}
+
+// ════════════════════════════════════════════════════════════════════
+//  ローカルユーティリティ
+// ════════════════════════════════════════════════════════════════════
 
 static std::string avErr(int errnum) {
     char buf[256];
@@ -56,6 +246,14 @@ static std::string avErr(int errnum) {
 
 #define VOSE_LOG(x)  std::cerr << "[VOSE] " << x << "\n"
 #define VOSE_ERR(x)  std::cerr << "[VOSE][ERR] " << x << "\n"
+
+// ════════════════════════════════════════════════════════════════════
+//  VideoEngine::hasAudio
+// ════════════════════════════════════════════════════════════════════
+
+bool VideoEngine::hasAudio() const {
+    return audioIdx_ >= 0;
+}
 
 // ════════════════════════════════════════════════════════════════════
 //  コンストラクタ / デストラクタ
@@ -89,42 +287,22 @@ bool VideoEngine::load(const std::string& filepath) {
     filePath_ = filepath;
     int ret;
 
-    // ① ファイルオープン
     ret = avformat_open_input(&fmtCtx_, filepath.c_str(), nullptr, nullptr);
-    if (ret != 0) {
-        VOSE_ERR("avformat_open_input: " << avErr(ret));
-        return false;
-    }
+    if (ret != 0) { VOSE_ERR("avformat_open_input: " << avErr(ret)); return false; }
 
-    // ② ストリーム情報の取得
     ret = avformat_find_stream_info(fmtCtx_, nullptr);
-    if (ret < 0) {
-        VOSE_ERR("avformat_find_stream_info: " << avErr(ret));
-        return false;
-    }
+    if (ret < 0)  { VOSE_ERR("avformat_find_stream_info: " << avErr(ret)); return false; }
 
-    // ③ ベストな映像ストリームを検索
     const AVCodec* videoDecoder = nullptr;
     videoIdx_ = av_find_best_stream(fmtCtx_, AVMEDIA_TYPE_VIDEO, -1, -1, &videoDecoder, 0);
-    if (videoIdx_ < 0) {
-        VOSE_ERR("映像ストリームが見つかりません");
-        return false;
-    }
+    if (videoIdx_ < 0) { VOSE_ERR("映像ストリームが見つかりません"); return false; }
 
-    // ④ 映像コーデックを開く
     videoCtx_ = avcodec_alloc_context3(videoDecoder);
-    if (!videoCtx_) {
-        VOSE_ERR("avcodec_alloc_context3 (video) 失敗");
-        return false;
-    }
+    if (!videoCtx_) { VOSE_ERR("avcodec_alloc_context3 (video) 失敗"); return false; }
     avcodec_parameters_to_context(videoCtx_, fmtCtx_->streams[videoIdx_]->codecpar);
     ret = avcodec_open2(videoCtx_, videoDecoder, nullptr);
-    if (ret < 0) {
-        VOSE_ERR("avcodec_open2 (video): " << avErr(ret));
-        return false;
-    }
+    if (ret < 0) { VOSE_ERR("avcodec_open2 (video): " << avErr(ret)); return false; }
 
-    // ⑤ 音声ストリームを検索（なくても続行）
     const AVCodec* audioDecoder = nullptr;
     audioIdx_ = av_find_best_stream(fmtCtx_, AVMEDIA_TYPE_AUDIO, -1, -1, &audioDecoder, 0);
     if (audioIdx_ >= 0 && audioDecoder) {
@@ -149,7 +327,7 @@ bool VideoEngine::load(const std::string& filepath) {
     return true;
 }
 
-// ─── アクセサ ──────────────────────────────────────────────────────
+// ── アクセサ ──────────────────────────────────────────────────────
 
 int    VideoEngine::width()    const { return loaded_ ? videoCtx_->width  : 0; }
 int    VideoEngine::height()   const { return loaded_ ? videoCtx_->height : 0; }
@@ -174,52 +352,33 @@ void VideoEngine::reportProgress(double p, const std::string& stage) {
     if (progressCb_) progressCb_(std::min(p, 1.0), stage);
 }
 
-// ─── シーク + コーデックバッファフラッシュ ────────────────────────
-
 bool VideoEngine::seekAndFlush(double timeSec) {
     AVStream* vs = fmtCtx_->streams[videoIdx_];
     int64_t ts   = static_cast<int64_t>(timeSec / av_q2d(vs->time_base));
-
-    // まずストリーム単位でシーク
     int ret = av_seek_frame(fmtCtx_, videoIdx_, ts, AVSEEK_FLAG_BACKWARD);
     if (ret < 0) {
-        // フォールバック: AV_TIME_BASE 単位でシーク
         int64_t ts_us = static_cast<int64_t>(timeSec * AV_TIME_BASE);
         ret = avformat_seek_file(fmtCtx_, -1, INT64_MIN, ts_us, INT64_MAX, 0);
     }
-
-    // コーデック内部バッファをフラッシュ（これをしないと古いフレームが返る）
     avcodec_flush_buffers(videoCtx_);
     if (audioCtx_) avcodec_flush_buffers(audioCtx_);
-
     return ret >= 0;
 }
 
-// ─── SwsContext のキャッシュ生成 ───────────────────────────────────
-
 SwsContext* VideoEngine::makeSwsCtx(int w, int h, int srcFmt) {
-    
-    // 既存のコンテキストを解放
-    if (swsCtx_) {
-        sws_freeContext(swsCtx_);
-        swsCtx_ = nullptr;
-    }
-
-    // 引数の srcFmt を AVPixelFormat にキャストして FFmpeg 関数に渡す
+    if (swsCtx_) { sws_freeContext(swsCtx_); swsCtx_ = nullptr; }
     swsCtx_ = sws_getContext(w, h, static_cast<AVPixelFormat>(srcFmt),
                              w, h, AV_PIX_FMT_RGB24,
                              SWS_BILINEAR, nullptr, nullptr, nullptr);
-                             
     return swsCtx_;
 }
 
 // ════════════════════════════════════════════════════════════════════
-//  Phase 1: extractFrame() — フレームをメモリに取得
+//  Phase 1: extractFrame()
 // ════════════════════════════════════════════════════════════════════
 
 std::optional<FrameInfo> VideoEngine::extractFrame(double timeSec) {
     if (!loaded_) return std::nullopt;
-
     seekAndFlush(timeSec);
 
     AVPacket* pkt   = av_packet_alloc();
@@ -227,14 +386,9 @@ std::optional<FrameInfo> VideoEngine::extractFrame(double timeSec) {
     std::optional<FrameInfo> result;
 
     while (av_read_frame(fmtCtx_, pkt) >= 0) {
-        if (pkt->stream_index != videoIdx_) {
-            av_packet_unref(pkt);
-            continue;
-        }
-
+        if (pkt->stream_index != videoIdx_) { av_packet_unref(pkt); continue; }
         if (avcodec_send_packet(videoCtx_, pkt) == 0) {
             if (avcodec_receive_frame(videoCtx_, frame) == 0) {
-                // RGB24 変換フレームを準備
                 int w = frame->width, h = frame->height;
                 AVFrame* rgb = av_frame_alloc();
                 rgb->format  = AV_PIX_FMT_RGB24;
@@ -243,24 +397,21 @@ std::optional<FrameInfo> VideoEngine::extractFrame(double timeSec) {
                 av_frame_get_buffer(rgb, 1);
 
                 SwsContext* sws = makeSwsCtx(w, h, (AVPixelFormat)frame->format);
-                sws_scale(sws,
-                          frame->data, frame->linesize, 0, h,
-                          rgb->data,   rgb->linesize);
+                sws_scale(sws, frame->data, frame->linesize, 0, h,
+                          rgb->data, rgb->linesize);
 
                 FrameInfo fi;
                 fi.width       = w;
                 fi.height      = h;
                 fi.is_keyframe = (frame->flags & AV_FRAME_FLAG_KEY) != 0;
-                fi.pts_seconds = toSeconds(frame->pts, fmtCtx_->streams[videoIdx_]->time_base);
-
-                // packed RGB24 コピー（linesize != width*3 の場合に対応）
+                fi.pts_seconds = toSeconds(frame->pts,
+                                           fmtCtx_->streams[videoIdx_]->time_base);
                 fi.rgb_data.resize(static_cast<size_t>(w * h * 3));
                 for (int y = 0; y < h; y++) {
                     std::memcpy(fi.rgb_data.data() + static_cast<size_t>(y * w * 3),
                                 rgb->data[0] + y * rgb->linesize[0],
                                 static_cast<size_t>(w * 3));
                 }
-
                 av_frame_free(&rgb);
                 av_packet_unref(pkt);
                 result = std::move(fi);
@@ -269,25 +420,16 @@ std::optional<FrameInfo> VideoEngine::extractFrame(double timeSec) {
         }
         av_packet_unref(pkt);
     }
-
     av_frame_free(&frame);
     av_packet_free(&pkt);
     return result;
 }
 
-// ─── saveFrame() — extractFrame() → PPMファイル保存 ─────────────
-
 bool VideoEngine::saveFrame(double timeSec, const std::string& outPath) {
     auto fi = extractFrame(timeSec);
-    if (!fi) {
-        VOSE_ERR("フレーム取得失敗 at " << timeSec << "s");
-        return false;
-    }
+    if (!fi) { VOSE_ERR("フレーム取得失敗 at " << timeSec << "s"); return false; }
     std::ofstream ofs(outPath, std::ios::binary);
-    if (!ofs) {
-        VOSE_ERR("出力ファイルを開けません: " << outPath);
-        return false;
-    }
+    if (!ofs)   { VOSE_ERR("出力ファイルを開けません: " << outPath); return false; }
     ofs << "P6\n" << fi->width << " " << fi->height << "\n255\n";
     ofs.write(reinterpret_cast<const char*>(fi->rgb_data.data()),
               static_cast<std::streamsize>(fi->rgb_data.size()));
@@ -296,7 +438,7 @@ bool VideoEngine::saveFrame(double timeSec, const std::string& outPath) {
 }
 
 // ════════════════════════════════════════════════════════════════════
-//  Phase 1: extractWaveform() — 音声波形の生成
+//  Phase 1: extractWaveform()
 // ════════════════════════════════════════════════════════════════════
 
 WaveformData VideoEngine::extractWaveform(int chunks) {
@@ -306,18 +448,13 @@ WaveformData VideoEngine::extractWaveform(int chunks) {
         return result;
     }
 
-    // SwrContext を設定: 任意フォーマット → mono / f32
     SwrContext* swr = swr_alloc();
-
-    // 入力チャンネルレイアウトをコピー
     AVChannelLayout in_layout;
     av_channel_layout_copy(&in_layout, &audioCtx_->ch_layout);
-
-    // 出力: モノラル
     AVChannelLayout out_layout = AV_CHANNEL_LAYOUT_MONO;
 
-    av_opt_set_chlayout   (swr, "in_chlayout",    &in_layout,            0);
-    av_opt_set_chlayout   (swr, "out_chlayout",   &out_layout,           0);
+    av_opt_set_chlayout   (swr, "in_chlayout",    &in_layout,             0);
+    av_opt_set_chlayout   (swr, "out_chlayout",   &out_layout,            0);
     av_opt_set_int        (swr, "in_sample_rate",  audioCtx_->sample_rate, 0);
     av_opt_set_int        (swr, "out_sample_rate", audioCtx_->sample_rate, 0);
     av_opt_set_sample_fmt (swr, "in_sample_fmt",   audioCtx_->sample_fmt,  0);
@@ -331,11 +468,9 @@ WaveformData VideoEngine::extractWaveform(int chunks) {
     }
     av_channel_layout_uninit(&in_layout);
 
-    // 音声ストリームの先頭へシーク
     avformat_seek_file(fmtCtx_, audioIdx_, 0, 0, 0, 0);
     avcodec_flush_buffers(audioCtx_);
 
-    // 全サンプルを収集
     double dur = duration();
     std::vector<float> allSamples;
     allSamples.reserve(static_cast<size_t>(audioCtx_->sample_rate * dur) + 1024);
@@ -358,8 +493,6 @@ WaveformData VideoEngine::extractWaveform(int chunks) {
             }
         }
         av_packet_unref(pkt);
-
-        // プログレス更新
         if (dur > 0.0 && audioCtx_->sample_rate > 0) {
             double prog = static_cast<double>(allSamples.size())
                         / (audioCtx_->sample_rate * dur);
@@ -371,19 +504,15 @@ WaveformData VideoEngine::extractWaveform(int chunks) {
     av_packet_free(&pkt);
     swr_free(&swr);
 
-    if (allSamples.empty()) {
-        VOSE_LOG("音声サンプルが0件でした。");
-        return result;
-    }
+    if (allSamples.empty()) { VOSE_LOG("音声サンプルが0件でした。"); return result; }
 
-    // チャンク単位でピーク/RMSを計算
     result.sample_rate  = audioCtx_->sample_rate;
     result.channels     = 1;
     result.duration_sec = dur;
     result.chunks       = chunks;
     result.peaks_max.assign(chunks, 0.0f);
     result.peaks_min.assign(chunks, 0.0f);
-    result.rms.assign(chunks,       0.0f);
+    result.rms.assign(chunks, 0.0f);
 
     size_t total     = allSamples.size();
     size_t chunkSize = std::max<size_t>(1, total / static_cast<size_t>(chunks));
@@ -392,7 +521,6 @@ WaveformData VideoEngine::extractWaveform(int chunks) {
         size_t start = static_cast<size_t>(c) * chunkSize;
         size_t end   = std::min(start + chunkSize, total);
         if (start >= total) break;
-
         float maxV = 0.0f, minV = 0.0f, sumSq = 0.0f;
         for (size_t i = start; i < end; i++) {
             float s = allSamples[i];
@@ -411,14 +539,13 @@ WaveformData VideoEngine::extractWaveform(int chunks) {
 }
 
 // ════════════════════════════════════════════════════════════════════
-//  Phase 2: buildKeyframeIndex() — キーフレームインデックス構築
+//  Phase 2: buildKeyframeIndex()
 // ════════════════════════════════════════════════════════════════════
 
 std::vector<KeyframeIndex> VideoEngine::buildKeyframeIndex() {
     if (!loaded_) return {};
     keyframeIdx_.clear();
 
-    // 映像ストリーム先頭へシーク
     avformat_seek_file(fmtCtx_, videoIdx_, 0, 0, 0, AVSEEK_FLAG_BACKWARD);
     avcodec_flush_buffers(videoCtx_);
 
@@ -436,9 +563,7 @@ std::vector<KeyframeIndex> VideoEngine::buildKeyframeIndex() {
             kf.pts_seconds = toSeconds(pkt->pts, vs->time_base);
             kf.file_pos    = avio_tell(fmtCtx_->pb);
             keyframeIdx_.push_back(kf);
-
-            if (dur > 0.0)
-                reportProgress(kf.pts_seconds / dur, "キーフレームインデックス");
+            if (dur > 0.0) reportProgress(kf.pts_seconds / dur, "キーフレームインデックス");
         }
         av_packet_unref(pkt);
     }
@@ -449,44 +574,30 @@ std::vector<KeyframeIndex> VideoEngine::buildKeyframeIndex() {
     return keyframeIdx_;
 }
 
-// ─── findNearestKeyframe() ────────────────────────────────────────
-
 double VideoEngine::findNearestKeyframe(double timeSec) const {
     if (keyframeIdx_.empty()) return timeSec;
-
-    // timeSec 以下の最後のキーフレームを二分探索
     auto it = std::upper_bound(
         keyframeIdx_.begin(), keyframeIdx_.end(), timeSec,
         [](double t, const KeyframeIndex& kf) { return t < kf.pts_seconds; });
-
-    if (it == keyframeIdx_.begin())
-        return keyframeIdx_.front().pts_seconds;
+    if (it == keyframeIdx_.begin()) return keyframeIdx_.front().pts_seconds;
     --it;
     return it->pts_seconds;
 }
 
 // ════════════════════════════════════════════════════════════════════
-//  Phase 2: exportFromEDL() — ストリームコピーによる非破壊エクスポート
+//  Phase 2: exportFromEDL()
 // ════════════════════════════════════════════════════════════════════
 
 bool VideoEngine::exportFromEDL(const EDL& edl, const std::string& outPath) {
     if (!loaded_) return false;
 
     auto entries = edl.getEnabledEntries();
-    if (entries.empty()) {
-        VOSE_LOG("EDLに有効なエントリがありません。");
-        return false;
-    }
+    if (entries.empty()) { VOSE_LOG("EDLに有効なエントリがありません。"); return false; }
 
-    // ── 出力フォーマットコンテキスト生成 ──
     AVFormatContext* outFmt = nullptr;
     int ret = avformat_alloc_output_context2(&outFmt, nullptr, nullptr, outPath.c_str());
-    if (ret < 0 || !outFmt) {
-        VOSE_ERR("出力コンテキスト生成失敗: " << avErr(ret));
-        return false;
-    }
+    if (ret < 0 || !outFmt) { VOSE_ERR("出力コンテキスト生成失敗: " << avErr(ret)); return false; }
 
-    // ── 入力ストリームを出力にコピー（映像 + 音声のみ） ──
     std::vector<int> streamMap(fmtCtx_->nb_streams, -1);
     int outIdx = 0;
     for (unsigned i = 0; i < fmtCtx_->nb_streams; i++) {
@@ -510,11 +621,8 @@ bool VideoEngine::exportFromEDL(const EDL& edl, const std::string& outPath) {
         }
     }
     int write_header_ret = avformat_write_header(outFmt, nullptr);
-    if (write_header_ret < 0) {
-        VOSE_ERR("Failed to write header: " << avErr(write_header_ret));
-    }
-    // ── 各セグメントをパケット単位でコピー ──
-    // 出力PTSの連続性を保つためにオフセットを追跡する
+    if (write_header_ret < 0) VOSE_ERR("Failed to write header: " << avErr(write_header_ret));
+
     std::vector<int64_t> ptsOffsets(outIdx, 0);
     std::vector<int64_t> firstPts(outIdx, AV_NOPTS_VALUE);
     std::vector<bool>    firstPktSeen(outIdx, false);
@@ -523,7 +631,6 @@ bool VideoEngine::exportFromEDL(const EDL& edl, const std::string& outPath) {
         const auto& entry = entries[ei];
         reportProgress(static_cast<double>(ei) / entries.size(), "エクスポート中");
 
-        // キーフレームにアライメントしてシーク
         double seekTarget = !keyframeIdx_.empty()
                           ? findNearestKeyframe(entry.in_point)
                           : entry.in_point;
@@ -535,40 +642,26 @@ bool VideoEngine::exportFromEDL(const EDL& edl, const std::string& outPath) {
         while (av_read_frame(fmtCtx_, pkt) >= 0) {
             int si = pkt->stream_index;
             if (si >= static_cast<int>(streamMap.size()) || streamMap[si] < 0) {
-                av_packet_unref(pkt);
-                continue;
+                av_packet_unref(pkt); continue;
             }
-
             AVStream* inStream  = fmtCtx_->streams[si];
             int       oi        = streamMap[si];
             AVStream* outStream = outFmt->streams[oi];
 
-            // PTS を秒換算して区間外をスキップ/終了
             double pktSec = AV_NOPTS_VALUE != pkt->pts
-                          ? toSeconds(pkt->pts, inStream->time_base)
-                          : 0.0;
+                          ? toSeconds(pkt->pts, inStream->time_base) : 0.0;
 
-            if (pktSec < entry.in_point - 0.002) {
-                av_packet_unref(pkt);
-                continue;
-            }
+            if (pktSec < entry.in_point - 0.002) { av_packet_unref(pkt); continue; }
             if (pktSec >= entry.out_point) {
-                // 映像ストリームのみ終了判定
-                if (si == videoIdx_) {
-                    av_packet_unref(pkt);
-                    break;
-                }
-                av_packet_unref(pkt);
-                continue;
+                if (si == videoIdx_) { av_packet_unref(pkt); break; }
+                av_packet_unref(pkt); continue;
             }
 
-            // 各ストリームの最初のPTSを記録
             if (!firstPktSeen[oi] && pkt->pts != AV_NOPTS_VALUE) {
                 firstPts[oi]     = av_rescale_q(pkt->pts, inStream->time_base, outStream->time_base);
                 firstPktSeen[oi] = true;
             }
 
-            // タイムスタンプのリスケール + 連続化
             AVPacket* outPkt = av_packet_clone(pkt);
             if (outPkt->pts != AV_NOPTS_VALUE) {
                 int64_t scaled = av_rescale_q(outPkt->pts, inStream->time_base, outStream->time_base);
@@ -578,20 +671,17 @@ bool VideoEngine::exportFromEDL(const EDL& edl, const std::string& outPath) {
                 int64_t scaled = av_rescale_q(outPkt->dts, inStream->time_base, outStream->time_base);
                 outPkt->dts    = scaled - firstPts[oi] + ptsOffsets[oi];
             }
-            if (outPkt->duration > 0) {
+            if (outPkt->duration > 0)
                 outPkt->duration = av_rescale_q(outPkt->duration,
                                                 inStream->time_base, outStream->time_base);
-            }
             outPkt->pos          = -1;
             outPkt->stream_index = oi;
-
             av_interleaved_write_frame(outFmt, outPkt);
             av_packet_free(&outPkt);
             av_packet_unref(pkt);
         }
         av_packet_free(&pkt);
 
-        // PTSオフセットをセグメント長分だけ進める
         for (int oi2 = 0; oi2 < outIdx; oi2++) {
             AVStream* outs = outFmt->streams[oi2];
             int64_t segLen = static_cast<int64_t>(
@@ -601,8 +691,7 @@ bool VideoEngine::exportFromEDL(const EDL& edl, const std::string& outPath) {
     }
 
     av_write_trailer(outFmt);
-    if (!(outFmt->oformat->flags & AVFMT_NOFILE))
-        avio_closep(&outFmt->pb);
+    if (!(outFmt->oformat->flags & AVFMT_NOFILE)) avio_closep(&outFmt->pb);
     avformat_free_context(outFmt);
 
     VOSE_LOG("EDLエクスポート完了: " << outPath);
@@ -611,25 +700,16 @@ bool VideoEngine::exportFromEDL(const EDL& edl, const std::string& outPath) {
 }
 
 // ════════════════════════════════════════════════════════════════════
-//  Phase 4: subtitleTrackFromVOSE() — VO-SE JSONを字幕トラックへ
+//  Phase 4: subtitleTrackFromVOSE()
 // ════════════════════════════════════════════════════════════════════
 
 SubtitleTrack VideoEngine::subtitleTrackFromVOSE(const std::string& voseJsonPath) {
-    // VO-SE 出力フォーマット例:
-    // [
-    //   {"start": 1.0, "end": 3.5, "text": "こんにちは", "x": 0.5, "y": 0.85},
-    //   ...
-    // ]
     SubtitleTrack track;
     std::ifstream f(voseJsonPath);
-    if (!f.is_open()) {
-        VOSE_ERR("VO-SE JSONを開けません: " << voseJsonPath);
-        return track;
-    }
+    if (!f.is_open()) { VOSE_ERR("VO-SE JSONを開けません: " << voseJsonPath); return track; }
     std::string content((std::istreambuf_iterator<char>(f)),
                          std::istreambuf_iterator<char>());
 
-    // ミニマムJSONパーサ（nlohmann/jsonへの差し替え推奨）
     auto parseDouble = [&](const std::string& block, const std::string& key, double def) -> double {
         std::string needle = "\"" + key + "\"";
         size_t k = block.find(needle);
@@ -658,7 +738,6 @@ SubtitleTrack VideoEngine::subtitleTrackFromVOSE(const std::string& voseJsonPath
         size_t end = content.find('}', pos);
         if (end == std::string::npos) break;
         std::string block = content.substr(pos, end - pos + 1);
-
         SubtitleEntry e;
         e.start_sec = parseDouble(block, "start", 0.0);
         e.end_sec   = parseDouble(block, "end",   0.0);
@@ -668,10 +747,7 @@ SubtitleTrack VideoEngine::subtitleTrackFromVOSE(const std::string& voseJsonPath
         e.font_size = static_cast<int>(parseDouble(block, "font_size", 48.0));
         e.style     = parseStr(block, "style");
         if (e.style.empty()) e.style = "normal";
-
-        if (!e.text.empty() && e.end_sec > e.start_sec)
-            track.push_back(e);
-
+        if (!e.text.empty() && e.end_sec > e.start_sec) track.push_back(e);
         pos = end + 1;
     }
 
@@ -679,23 +755,18 @@ SubtitleTrack VideoEngine::subtitleTrackFromVOSE(const std::string& voseJsonPath
     return track;
 }
 
-// ─── exportWithSubtitles() — ASSファイル生成 + バーンイン ─────────
-
 bool VideoEngine::exportWithSubtitles(const EDL& edl,
                                        const SubtitleTrack& subs,
                                        const std::string& outPath) {
     if (!loaded_) return false;
 
-    // ① ASSファイルを生成
     std::string assPath = outPath + ".tmp.ass";
     {
         std::ofstream ass(assPath);
-        ass << "[Script Info]\n"
-            << "ScriptType: v4.00+\n"
+        ass << "[Script Info]\nScriptType: v4.00+\n"
             << "PlayResX: " << width()  << "\n"
             << "PlayResY: " << height() << "\n"
             << "WrapStyle: 0\n\n";
-
         ass << "[V4+ Styles]\n"
             << "Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, "
                "OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, "
@@ -705,25 +776,21 @@ bool VideoEngine::exportWithSubtitles(const EDL& edl,
                "&H00000000,&H80000000,0,0,0,0,100,100,0,0,1,2.5,0,2,10,10,20,1\n"
             << "Style: Highlight,Noto Sans CJK JP,52,&H0000FFFF,&H000000FF,"
                "&H00000000,&H80000000,-1,0,0,0,100,100,0,0,1,2.5,0,2,10,10,20,1\n\n";
-
         ass << "[Events]\n"
             << "Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\n";
 
         auto toAssTime = [](double sec) -> std::string {
-            int h   = static_cast<int>(sec) / 3600;
-            int m   = (static_cast<int>(sec) % 3600) / 60;
+            int h = static_cast<int>(sec) / 3600;
+            int m = (static_cast<int>(sec) % 3600) / 60;
             double s = std::fmod(sec, 60.0);
             char buf[32];
             std::snprintf(buf, sizeof(buf), "%d:%02d:%05.2f", h, m, s);
             return buf;
         };
-
         for (const auto& sub : subs) {
             int px = static_cast<int>(sub.x * width());
             int py = static_cast<int>(sub.y * height());
             std::string styleName = (sub.style == "highlight") ? "Highlight" : "Default";
-
-            // {\pos(x,y)} で位置を指定
             ass << "Dialogue: 0,"
                 << toAssTime(sub.start_sec) << ","
                 << toAssTime(sub.end_sec)   << ","
@@ -734,20 +801,14 @@ bool VideoEngine::exportWithSubtitles(const EDL& edl,
     }
 
     VOSE_LOG("ASSファイル生成: " << assPath);
-
-    // ② EDLに従ってエクスポート（ストリームコピー）し、その後
-    //    ASSファイルをlibavfilterのsubtitlesフィルタでバーンインする実装を
-    //    本番環境では AVFilterGraph を使って構築する。
-    //    ここでは非破壊エクスポートを行い、ASSパスを返す。
     bool ok = exportFromEDL(edl, outPath);
-
     VOSE_LOG("字幕バーンイン用ASSファイル: " << assPath);
     VOSE_LOG("本番実装: avfilter subtitles=" << assPath << " で再エンコードが必要");
     return ok;
 }
 
 // ════════════════════════════════════════════════════════════════════
-//  Phase 5: exportWithVideoToolbox() — Appleシリコン対応HWエンコード
+//  Phase 5: exportWithVideoToolbox()
 // ════════════════════════════════════════════════════════════════════
 
 bool VideoEngine::exportWithVideoToolbox(const EDL& edl,
@@ -758,25 +819,22 @@ bool VideoEngine::exportWithVideoToolbox(const EDL& edl,
 
 #if !defined(__APPLE__)
     VOSE_LOG("VideoToolboxはmacOS専用です。libx264にフォールバックします。");
-    // ソフトウェアエンコードで代替
 #endif
 
     auto entries = edl.getEnabledEntries();
     if (entries.empty()) return false;
 
-    // ── 出力コンテキスト生成 ──
     AVFormatContext* outFmt = nullptr;
     avformat_alloc_output_context2(&outFmt, nullptr, nullptr, outPath.c_str());
     if (!outFmt) { VOSE_ERR("出力コンテキスト生成失敗"); return false; }
 
-    // ── VideoToolboxエンコーダを探す（フォールバックあり） ──
     const char* encoderNames[] = {
 #if defined(__APPLE__)
-        "hevc_videotoolbox",   // Apple M1/M2/M3: HEVC/H.265 HW
-        "h264_videotoolbox",   // Apple: H.264 HW
+        "hevc_videotoolbox",
+        "h264_videotoolbox",
 #endif
-        "libx265",             // ソフトウェアH.265
-        "libx264",             // ソフトウェアH.264
+        "libx265",
+        "libx264",
         nullptr
     };
     const AVCodec* encoder = nullptr;
@@ -784,9 +842,12 @@ bool VideoEngine::exportWithVideoToolbox(const EDL& edl,
         encoder = avcodec_find_encoder_by_name(encoderNames[i]);
         if (encoder) { VOSE_LOG("エンコーダ選択: " << encoderNames[i]); break; }
     }
-    if (!encoder) { VOSE_ERR("利用可能なエンコーダが見つかりません"); avformat_free_context(outFmt); return false; }
+    if (!encoder) {
+        VOSE_ERR("利用可能なエンコーダが見つかりません");
+        avformat_free_context(outFmt);
+        return false;
+    }
 
-    // ── エンコーダコンテキスト設定 ──
     AVCodecContext* encCtx = avcodec_alloc_context3(encoder);
     encCtx->width     = videoCtx_->width;
     encCtx->height    = videoCtx_->height;
@@ -797,15 +858,13 @@ bool VideoEngine::exportWithVideoToolbox(const EDL& edl,
 
     std::string encName = encoder->name;
     if (encName.find("videotoolbox") != std::string::npos) {
-        // VideoToolbox 品質設定（q値: 1=最高, 100=最低）
-        av_opt_set_int(encCtx->priv_data, "q",        crfQuality,  AV_OPT_SEARCH_CHILDREN);
-        av_opt_set    (encCtx->priv_data, "profile",  "high",      AV_OPT_SEARCH_CHILDREN);
-        av_opt_set    (encCtx->priv_data, "realtime", "0",         AV_OPT_SEARCH_CHILDREN);
-        // Apple Mediaエンジンを優先使用
-        av_opt_set    (encCtx->priv_data, "allow_sw", "0",         AV_OPT_SEARCH_CHILDREN);
-    } else if (encName.find("x264") != std::string::npos || encName.find("x265") != std::string::npos) {
-        av_opt_set    (encCtx->priv_data, "preset",   preset.c_str(), 0);
-        av_opt_set_int(encCtx->priv_data, "crf",      crfQuality,     AV_OPT_SEARCH_CHILDREN);
+        av_opt_set_int(encCtx->priv_data, "q",        crfQuality, AV_OPT_SEARCH_CHILDREN);
+        av_opt_set    (encCtx->priv_data, "profile",  "high",     AV_OPT_SEARCH_CHILDREN);
+        av_opt_set    (encCtx->priv_data, "realtime", "0",        AV_OPT_SEARCH_CHILDREN);
+        av_opt_set    (encCtx->priv_data, "allow_sw", "0",        AV_OPT_SEARCH_CHILDREN);
+    } else {
+        av_opt_set    (encCtx->priv_data, "preset", preset.c_str(), 0);
+        av_opt_set_int(encCtx->priv_data, "crf",    crfQuality,     AV_OPT_SEARCH_CHILDREN);
     }
 
     if (outFmt->oformat->flags & AVFMT_GLOBALHEADER)
@@ -819,12 +878,10 @@ bool VideoEngine::exportWithVideoToolbox(const EDL& edl,
         return false;
     }
 
-    // ── 出力ストリーム（映像）を設定 ──
     AVStream* outVStream = avformat_new_stream(outFmt, encoder);
     avcodec_parameters_from_context(outVStream->codecpar, encCtx);
     outVStream->time_base = encCtx->time_base;
 
-    // ── 音声はストリームコピー（パススルー） ──
     AVStream* outAStream = nullptr;
     if (audioIdx_ >= 0) {
         outAStream = avformat_new_stream(outFmt, nullptr);
@@ -834,7 +891,6 @@ bool VideoEngine::exportWithVideoToolbox(const EDL& edl,
         outAStream->time_base = fmtCtx_->streams[audioIdx_]->time_base;
     }
 
-    // ── ファイルオープン & ヘッダ書き込み ──
     if (!(outFmt->oformat->flags & AVFMT_NOFILE)) {
         ret = avio_open(&outFmt->pb, outPath.c_str(), AVIO_FLAG_WRITE);
         if (ret < 0) {
@@ -845,11 +901,8 @@ bool VideoEngine::exportWithVideoToolbox(const EDL& edl,
         }
     }
     int write_header_ret = avformat_write_header(outFmt, nullptr);
-    if (write_header_ret < 0) {
-        VOSE_ERR("Failed to write header: " << avErr(write_header_ret));
-    }
+    if (write_header_ret < 0) VOSE_ERR("Failed to write header: " << avErr(write_header_ret));
 
-    // ── ピクセルフォーマット変換器（デコード結果→YUV420P） ──
     SwsContext* encSws = sws_getContext(
         videoCtx_->width, videoCtx_->height, videoCtx_->pix_fmt,
         encCtx->width,    encCtx->height,    AV_PIX_FMT_YUV420P,
@@ -883,28 +936,26 @@ bool VideoEngine::exportWithVideoToolbox(const EDL& edl,
         reportProgress(static_cast<double>(ei) / entries.size(), "HWエンコード中");
 
         double seekTarget = !keyframeIdx_.empty()
-                          ? findNearestKeyframe(entry.in_point)
-                          : entry.in_point;
+                          ? findNearestKeyframe(entry.in_point) : entry.in_point;
         seekAndFlush(seekTarget);
 
         while (av_read_frame(fmtCtx_, inPkt) >= 0) {
-            // ── 映像デコード → エンコード ──
             if (inPkt->stream_index == videoIdx_) {
-                double pktSec = toSeconds(inPkt->pts, fmtCtx_->streams[videoIdx_]->time_base);
+                double pktSec = toSeconds(inPkt->pts,
+                                          fmtCtx_->streams[videoIdx_]->time_base);
                 if (pktSec < entry.in_point - 0.002) { av_packet_unref(inPkt); continue; }
                 if (pktSec >= entry.out_point)        { av_packet_unref(inPkt); break; }
 
                 if (avcodec_send_packet(videoCtx_, inPkt) == 0) {
                     while (avcodec_receive_frame(videoCtx_, decFrame) == 0) {
-                        // YUV変換
                         sws_scale(encSws,
                                   decFrame->data, decFrame->linesize, 0, decFrame->height,
                                   encFrame->data, encFrame->linesize);
                         encFrame->pts = frameIdx++;
-
                         if (avcodec_send_frame(encCtx, encFrame) == 0) {
                             while (avcodec_receive_packet(encCtx, outPkt) == 0) {
-                                av_packet_rescale_ts(outPkt, encCtx->time_base, outVStream->time_base);
+                                av_packet_rescale_ts(outPkt, encCtx->time_base,
+                                                     outVStream->time_base);
                                 outPkt->stream_index = 0;
                                 av_interleaved_write_frame(outFmt, outPkt);
                                 av_packet_unref(outPkt);
@@ -913,31 +964,25 @@ bool VideoEngine::exportWithVideoToolbox(const EDL& edl,
                         av_frame_unref(decFrame);
                     }
                 }
-            }
-            // ── 音声パススルー ──
-            else if (inPkt->stream_index == audioIdx_ && outAStream) {
-                double pktSec = toSeconds(inPkt->pts, fmtCtx_->streams[audioIdx_]->time_base);
+            } else if (inPkt->stream_index == audioIdx_ && outAStream) {
+                double pktSec = toSeconds(inPkt->pts,
+                                          fmtCtx_->streams[audioIdx_]->time_base);
                 if (pktSec < entry.in_point - 0.002) { av_packet_unref(inPkt); continue; }
                 if (pktSec >= entry.out_point)        { av_packet_unref(inPkt); continue; }
 
                 AVPacket* ap = av_packet_clone(inPkt);
-                av_packet_rescale_ts(ap,
-                    fmtCtx_->streams[audioIdx_]->time_base,
-                    outAStream->time_base);
-                ap->pts          += audioOff;
-                ap->dts          += audioOff;
-                ap->pos           = -1;
-                ap->stream_index  = 1;
+                av_packet_rescale_ts(ap, fmtCtx_->streams[audioIdx_]->time_base,
+                                     outAStream->time_base);
+                ap->pts         += audioOff;
+                ap->dts         += audioOff;
+                ap->pos          = -1;
+                ap->stream_index = 1;
                 av_interleaved_write_frame(outFmt, ap);
                 av_packet_free(&ap);
             }
             av_packet_unref(inPkt);
         }
-
-        // セグメント末尾でエンコーダをフラッシュ
         flushEncoder();
-
-        // 音声オフセットを更新
         if (outAStream) {
             audioOff += static_cast<int64_t>(
                 entry.duration() / av_q2d(outAStream->time_base));
@@ -945,7 +990,6 @@ bool VideoEngine::exportWithVideoToolbox(const EDL& edl,
     }
 
     av_write_trailer(outFmt);
-
     sws_freeContext(encSws);
     av_frame_free(&decFrame);
     av_frame_free(&encFrame);
@@ -961,36 +1005,22 @@ bool VideoEngine::exportWithVideoToolbox(const EDL& edl,
 }
 
 // ════════════════════════════════════════════════════════════════════
-//  C API 実装 — Phase 3: UX Bridge (ctypes用エクスポート)
+//  C API — Phase 3: UX Bridge
 // ════════════════════════════════════════════════════════════════════
 
 extern "C" {
 
-void* vose_create() {
-    return new vose::VideoEngine();
-}
-void vose_destroy(void* h) {
-    delete static_cast<vose::VideoEngine*>(h);
-}
-int vose_load(void* h, const char* path) {
+void* vose_create()                { return new vose::VideoEngine(); }
+void  vose_destroy(void* h)        { delete static_cast<vose::VideoEngine*>(h); }
+int   vose_load(void* h, const char* path) {
     return static_cast<vose::VideoEngine*>(h)->load(path) ? 1 : 0;
 }
-double vose_duration(void* h) {
-    return static_cast<vose::VideoEngine*>(h)->duration();
-}
-int vose_width(void* h) {
-    return static_cast<vose::VideoEngine*>(h)->width();
-}
-int vose_height(void* h) {
-    return static_cast<vose::VideoEngine*>(h)->height();
-}
-double vose_fps(void* h) {
-    return static_cast<vose::VideoEngine*>(h)->fps();
-}
-int vose_has_audio(void* h) {
-    return static_cast<vose::VideoEngine*>(h)->hasAudio() ? 1 : 0;
-}
-int vose_save_frame(void* h, double time_sec, const char* out_path) {
+double vose_duration(void* h)  { return static_cast<vose::VideoEngine*>(h)->duration(); }
+int    vose_width(void* h)     { return static_cast<vose::VideoEngine*>(h)->width(); }
+int    vose_height(void* h)    { return static_cast<vose::VideoEngine*>(h)->height(); }
+double vose_fps(void* h)       { return static_cast<vose::VideoEngine*>(h)->fps(); }
+int    vose_has_audio(void* h) { return static_cast<vose::VideoEngine*>(h)->hasAudio() ? 1 : 0; }
+int    vose_save_frame(void* h, double time_sec, const char* out_path) {
     return static_cast<vose::VideoEngine*>(h)->saveFrame(time_sec, out_path) ? 1 : 0;
 }
 int vose_waveform(void* h, float* out_buf, int buf_size, int chunks) {
@@ -1012,7 +1042,7 @@ int vose_export_hw(void* h, const char* edl_json, const char* out_path, int qual
     if (!edl.deserialize(edl_json)) return 0;
     return eng->exportWithVideoToolbox(edl, out_path, quality) ? 1 : 0;
 }
-int vose_build_keyframe_index(void* h) {
+int    vose_build_keyframe_index(void* h) {
     return static_cast<int>(
         static_cast<vose::VideoEngine*>(h)->buildKeyframeIndex().size());
 }
