@@ -7,8 +7,8 @@
 #include <cmath>
 #include <filesystem>
 #include <fstream>
-#include <iomanip>    
-#include <shared_mutex> // std::shared_mutex 用
+#include <iomanip>
+#include <shared_mutex>
 #include <random>
 #include <sstream>
 #include <cstring>
@@ -180,6 +180,7 @@ struct SynthesisScratchPad {
     }
 };
 
+// thread_local はパス2-B（書き込みフェーズ）専用として残す
 static thread_local SynthesisScratchPad tl_scratch;
 
 // ============================================================
@@ -187,7 +188,7 @@ static thread_local SynthesisScratchPad tl_scratch;
 // ============================================================
 
 static constexpr int    kFs               = 44100;
-static constexpr double kFramePeriod      = 5.0;   // ms
+static constexpr double kFramePeriod      = 5.0;
 static constexpr double kInv32768         = 1.0 / 32768.0;
 static constexpr int    kCrossfadeSamples = static_cast<int>(kFs * 0.030);
 static constexpr int    kMaxPitchLength   = 120000;
@@ -282,7 +283,6 @@ build_analysis_cache(const EmbeddedVoice& ev, int fft_size, int spec_bins)
     Harvest(ev.waveform.data(), wav_len, ev.fs, &opt,
             cache->time.data(), cache->f0.data());
 
-    // F0補完: 無声区間を前後の有声値で線形補間
     {
         std::vector<int> vi;
         vi.reserve(harvest_len);
@@ -380,7 +380,7 @@ static double map_time(double t_out_ms, const OtoEntry& oto,
 }
 
 // ============================================================
-// copy_cache_to_scratch
+// copy_cache_to_scratch  (パス2-B 書き込みフェーズ専用)
 // ============================================================
 
 static void copy_cache_to_scratch_cur(const AnalysisCache& c)
@@ -527,69 +527,44 @@ static void blend_transition_spectra(
 
 // ============================================================
 // apply_vibrato
-//
-// ノート後半50%からビブラートを自然に立ち上げる。
-// フェードイン: raised cosine で 0→1
-// 波形: sin（6Hz・±15cent）
-// 15cent = 目標Hz × (2^(15/1200) - 1) ≈ 目標Hz × 0.00868
-//
-// AuralAIEngineの _apply_pseudo_ai と同じ発想だが、
-// C++側でフレーム単位に適用することで遅延ゼロ・Python依存なし。
 // ============================================================
 
 static void apply_vibrato(double* f0, int f0_length, double frame_period_ms)
 {
     if (!f0 || f0_length <= 0) return;
-
-    // ビブラートが始まるフレーム（後半50%から）
     const int vib_start = f0_length / 2;
     const int vib_len   = f0_length - vib_start;
     if (vib_len <= 0) return;
-
-    constexpr double kVibFreqHz  = 6.0;         // 6Hz
-    constexpr double kVibDepth   = 0.00868;      // 約15cent
+    constexpr double kVibFreqHz  = 6.0;
+    constexpr double kVibDepth   = 0.00868;
     const double     frame_sec   = frame_period_ms / 1000.0;
-
     for (int j = vib_start; j < f0_length; ++j) {
-        // フェードイン: 後半の最初の25%で0→1に立ち上げる
         const double fade_progress =
             static_cast<double>(j - vib_start) / std::max(vib_len - 1, 1);
-        const double fade_in = std::min(fade_progress * 4.0, 1.0); // 25%で飽和
-
+        const double fade_in = std::min(fade_progress * 4.0, 1.0);
         const double t_sec = static_cast<double>(j) * frame_sec;
         const double vib   = std::sin(2.0 * M_PI * kVibFreqHz * t_sec)
                              * kVibDepth * f0[j] * fade_in;
         f0[j] += vib;
-        // F0が負にならないようにクランプ
         if (f0[j] < 50.0) f0[j] = 50.0;
     }
 }
 
 // ============================================================
-// [NEW ③] smooth_f0_gaussian
-//
-// F0配列にガウシアンカーネルを畳み込んで音符境界の急変を緩和する。
-// カーネル幅: 5フレーム（= 25ms @ 5ms/frame）
-// 端点は折り返しパディングで処理する（ゼロパディングより自然）。
-//
-// 処理コスト: f0_length × 5 の乗算のみ → 無視できる
+// smooth_f0_gaussian
 // ============================================================
 
 static void smooth_f0_gaussian(double* f0, int f0_length)
 {
     if (!f0 || f0_length <= 0) return;
-
-    // sigma=1.0 の5点ガウシアンカーネル（正規化済み）
     static constexpr double kKernel[5] = {
         0.06136, 0.24477, 0.38774, 0.24477, 0.06136
     };
-    static constexpr int kRadius = 2; // カーネル半径
-
+    static constexpr int kRadius = 2;
     std::vector<double> tmp(f0_length);
     for (int i = 0; i < f0_length; ++i) {
         double sum = 0.0;
         for (int k = -kRadius; k <= kRadius; ++k) {
-            // 折り返しパディング: 端点を反射させる
             int idx = i + k;
             if (idx < 0)           idx = -idx;
             if (idx >= f0_length)  idx = 2*(f0_length-1) - idx;
@@ -601,7 +576,7 @@ static void smooth_f0_gaussian(double* f0, int f0_length)
 }
 
 // ============================================================
-// VOSE_Synthesis
+// VOSE_Synthesis  (thread_local tl_scratch 使用 — シングルスレッド専用)
 // ============================================================
 
 static void VOSE_Synthesis(
@@ -645,6 +620,65 @@ static void VOSE_Synthesis(
 }
 
 // ============================================================
+// VOSE_Synthesis_local  ★新規追加★
+//
+// スクラッチパッドを引数で受け取るスレッドセーフ版。
+// execute_render のパス2-A（並列合成）で使用する。
+// thread_local に一切依存しないため std::async から安全に呼べる。
+// ============================================================
+
+static void VOSE_Synthesis_local(
+    SynthesisScratchPad& scratch,
+    const double* f0, int f0_length,
+    double** spectrogram, double** aperiodicity,
+    int fft_size, double frame_period, int fs,
+    int y_length, double* y)
+{
+    const int spec_bins = fft_size / 2 + 1;
+
+    // mod_ap をローカル scratch に展開
+    scratch.flat_mod_ap.assign(
+        static_cast<size_t>(f0_length) * spec_bins, 0.0);
+    scratch.mod_ap_ptrs.resize(f0_length);
+    for (int i = 0; i < f0_length; ++i)
+        scratch.mod_ap_ptrs[i] =
+            &scratch.flat_mod_ap[static_cast<size_t>(i) * spec_bins];
+
+    // スレッドごとに独立した RNG（thread_local は static なので安全）
+    static thread_local std::mt19937 rng_local(
+        static_cast<uint32_t>(
+            std::hash<std::thread::id>{}(std::this_thread::get_id())));
+    std::uniform_real_distribution<double> dist(-0.02, 0.02);
+
+    for (int i = 0; i < f0_length; ++i) {
+        double* ap_dst = scratch.mod_ap_ptrs[i];
+        double* ap_src = aperiodicity[i];
+        double delta_f0 = 0.0;
+        if (i > 0 && i < f0_length - 1)
+            delta_f0 = std::abs(f0[i + 1] - f0[i - 1]) * 0.5;
+        const double vibrato_breath = std::min(0.15, delta_f0 * 0.003);
+        for (int k = 0; k < spec_bins; ++k) {
+            double current_ap = ap_src[k];
+            const double freq = static_cast<double>(k) * fs / fft_size;
+            if (freq > 2000.0) current_ap += vibrato_breath + dist(rng_local);
+            ap_dst[k] = std::clamp(current_ap, 0.0, 1.0);
+        }
+    }
+
+    Synthesis(f0, f0_length, spectrogram, scratch.mod_ap_ptrs.data(),
+              fft_size, frame_period, fs, y_length, y);
+
+    // ハイパスフィルタ
+    double prev_x = 0.0, prev_y_hp = 0.0;
+    for (int i = 0; i < y_length; ++i) {
+        double hp = y[i] - prev_x + 0.85 * prev_y_hp;
+        prev_x    = y[i];
+        prev_y_hp = hp;
+        y[i] += hp * 0.05;
+    }
+}
+
+// ============================================================
 // extern "C" API
 // ============================================================
 
@@ -672,49 +706,23 @@ DLLEXPORT void load_embedded_resource(const char* phoneme,
 }
 
 // ============================================================
-// execute_render  (並列合成版)
-//
-// 並列化の設計:
-//   パス2を「合成フェーズ」と「書き込みフェーズ」に分離する。
-//
-//   [合成フェーズ・並列]
-//     各ノートの note_buf を std::async で独立して合成する。
-//     ノード間の依存関係（current_offset, full_song_buffer）には
-//     一切触れないので安全に並列化できる。
-//     tl_scratch は thread_local なのでスレッドごとに独立している。
-//
-//   [書き込みフェーズ・順次]
-//     future.get() で合成完了を待ち、apply_crossfade でシングルスレッドで書き込む。
-//     full_song_buffer への書き込みはここだけなのでデータ競合なし。
-//
-// スレッド数:
-//   std::thread::hardware_concurrency() を上限とするが、
-//   音源の解析（get_or_analyze）は g_analysis_cache_mutex を取るため
-//   キャッシュミス時だけ直列化される。通常はキャッシュヒットするので問題なし。
+// execute_render  ★パス2-A スレッドセーフ化済み★
 // ============================================================
- 
 
-DLLEXPORT void execute_render(NoteEvent* notes, int note_count, const char* output_path, int mode_flag)
+DLLEXPORT void execute_render(NoteEvent* notes, int note_count,
+                               const char* output_path, int mode_flag)
 {
     if (!notes || note_count <= 0 || !output_path) return;
 
-    // ================================================================
-    // Pro版（Studio Master）の判定とパラメータ設定
-    // ================================================================
-    bool is_pro = (mode_flag == 1);
-    
-    // Pro版は 32bit float (または32bit PCM)、無料版は 16bit CD音質
-    int out_bit_depth = is_pro ? 32 : 16;
-    
-    // ※将来的に96kHz出力を行う場合は、ここの out_fs を切り替えて、
-    // 最後の wavwrite 前にリサンプリング処理を挟みます。
-    int out_fs = kFs; 
+    bool is_pro        = (mode_flag == 1);
+    int  out_bit_depth = is_pro ? 32 : 16;
+    int  out_fs        = kFs;
 
     const int fft_size  = GetFFTSizeForCheapTrick(kFs, nullptr);
     const int spec_bins = fft_size / 2 + 1;
 
     // ----------------------------------------------------------------
-    // パス1: NotePrepass 構築（変更なし）
+    // パス1: NotePrepass 構築
     // ----------------------------------------------------------------
     std::vector<NotePrepass> prepass(note_count);
     int     max_harvest_len  = 0;
@@ -772,13 +780,17 @@ DLLEXPORT void execute_render(NoteEvent* notes, int note_count, const char* outp
         static_cast<int64_t>(max_preutterance * kFs / 1000.0);
     const int64_t buffer_total = total_samples + pre_buffer_samples;
 
-    tl_scratch.ensure_spec(max_harvest_len, spec_bins);
     std::vector<double> full_song_buffer(buffer_total, 0.0);
 
     static const OtoEntry kDefaultOto = {};
 
     // ----------------------------------------------------------------
-    // パス2-A: 各ノートの note_buf を並列合成
+    // パス2-A: 各ノートの note_buf を並列合成  ★スレッドセーフ版★
+    //
+    // 変更点:
+    //   Before: ラムダ内で thread_local tl_scratch を直接使用
+    //   After : タスクごとにローカル SynthesisScratchPad を確保
+    //           → スレッドプールの使い回しによる状態汚染を完全排除
     // ----------------------------------------------------------------
     const int max_threads = static_cast<int>(
         std::max(1u, std::thread::hardware_concurrency()));
@@ -789,43 +801,69 @@ DLLEXPORT void execute_render(NoteEvent* notes, int note_count, const char* outp
         const NotePrepass& pp = prepass[idx];
         if (pp.state != NoteState::RENDERABLE) return;
 
-        NoteEvent& n               = notes[idx];
-        const int64_t note_samples = pp.note_samples;
-        const double  note_ms      = static_cast<double>(note_samples) / kFs * 1000.0;
-        const double  src_ms       = get_source_ms(*pp.ev);
+        NoteEvent& n                = notes[idx];
+        const int64_t note_samples  = pp.note_samples;
+        const double  note_ms       = static_cast<double>(note_samples) / kFs * 1000.0;
+        const double  src_ms        = get_source_ms(*pp.ev);
         const int     output_frames = static_cast<int>(note_ms / kFramePeriod);
         const OtoEntry& current_oto = pp.oto ? *pp.oto : kDefaultOto;
 
+        // ★ タスクスコープのローカル scratch（thread_local 非依存）
+        SynthesisScratchPad scratch;
+        scratch.ensure_spec(output_frames, spec_bins);
+        scratch.ensure_f0(output_frames);
+
         auto cache_cur = get_or_analyze(pp.ev, fft_size, spec_bins);
 
-        tl_scratch.ensure_f0(output_frames);
-        tl_scratch.ensure_spec(output_frames, spec_bins);
-
+        // 前ノートのスペクトルをブレンド
         if (pp.prev_ev) {
             auto cache_prev = get_or_analyze(pp.prev_ev, fft_size, spec_bins);
-            copy_cache_to_scratch_prev(*cache_prev);
+            const int prev_len = cache_prev->length;
+
+            // prev 側を scratch の prev スロットにコピー
+            scratch.ensure_spec(std::max(output_frames, prev_len), spec_bins);
+            scratch.ensure_f0_prev(prev_len);
+
+            const size_t total_prev = static_cast<size_t>(prev_len) * spec_bins;
+            std::copy(cache_prev->flat_spec.begin(),
+                      cache_prev->flat_spec.begin() + total_prev,
+                      scratch.flat_spec_prev.begin());
+            std::copy(cache_prev->flat_ap.begin(),
+                      cache_prev->flat_ap.begin() + total_prev,
+                      scratch.flat_ap_prev.begin());
+            std::copy(cache_prev->f0.begin(),
+                      cache_prev->f0.begin() + prev_len,
+                      scratch.f0_prev.begin());
+            std::copy(cache_prev->time.begin(),
+                      cache_prev->time.begin() + prev_len,
+                      scratch.time_axis_prev.begin());
+
             blend_transition_spectra(
-                tl_scratch.spec_ptrs.data(), tl_scratch.ap_ptrs.data(), output_frames,
-                tl_scratch.spec_ptrs_prev.data(), tl_scratch.ap_ptrs_prev.data(),
-                cache_prev->length, spec_bins, kTransitionFrames);
+                scratch.spec_ptrs.data(), scratch.ap_ptrs.data(), output_frames,
+                scratch.spec_ptrs_prev.data(), scratch.ap_ptrs_prev.data(),
+                prev_len, spec_bins, kTransitionFrames);
         }
 
+        // フレームごとにスペクトル / F0 を書き込む
         for (int j = 0; j < output_frames; ++j) {
             const double t_out_ms = j * kFramePeriod;
             const double t_src_ms = map_time(t_out_ms, current_oto, src_ms, note_ms);
             const int src_frame   = std::clamp(
-                static_cast<int>(t_src_ms / kFramePeriod), 0, cache_cur->length-1);
+                static_cast<int>(t_src_ms / kFramePeriod), 0, cache_cur->length - 1);
 
-            double* sr = tl_scratch.spec_ptrs[j];
-            double* ar = tl_scratch.ap_ptrs  [j];
-            std::copy_n(&cache_cur->flat_spec[static_cast<size_t>(src_frame)*spec_bins],
-                        spec_bins, sr);
-            std::copy_n(&cache_cur->flat_ap  [static_cast<size_t>(src_frame)*spec_bins],
-                        spec_bins, ar);
+            double* sr = scratch.spec_ptrs[j];
+            double* ar = scratch.ap_ptrs[j];
+            std::copy_n(
+                &cache_cur->flat_spec[static_cast<size_t>(src_frame) * spec_bins],
+                spec_bins, sr);
+            std::copy_n(
+                &cache_cur->flat_ap[static_cast<size_t>(src_frame) * spec_bins],
+                spec_bins, ar);
 
-            tl_scratch.f0[j] = n.pitch_curve
+            scratch.f0[j] = n.pitch_curve
                 ? resample_curve(n.pitch_curve, n.pitch_length, j, output_frames)
                 : 440.0;
+
             const double gender  = n.gender_curve
                 ? resample_curve(n.gender_curve,  n.pitch_length, j, output_frames) : 0.5;
             const double tension = n.tension_curve
@@ -833,23 +871,22 @@ DLLEXPORT void execute_render(NoteEvent* notes, int note_count, const char* outp
             const double breath  = n.breath_curve
                 ? resample_curve(n.breath_curve,  n.pitch_length, j, output_frames) : 0.5;
 
-            apply_gender_shift  (sr, spec_bins, gender, tl_scratch.spec_tmp.data());
+            apply_gender_shift  (sr, spec_bins, gender, scratch.spec_tmp.data());
             apply_tension_breath(sr, ar, spec_bins, tension, breath);
         }
 
-        smooth_f0_gaussian(tl_scratch.f0.data(), output_frames);
-        apply_vibrato(tl_scratch.f0.data(), output_frames, kFramePeriod);
+        smooth_f0_gaussian(scratch.f0.data(), output_frames);
+        apply_vibrato(scratch.f0.data(), output_frames, kFramePeriod);
 
         note_bufs[idx].assign(static_cast<size_t>(note_samples), 0.0);
-        
-        // --- 【Pro機能拡張ポイント】 ---
-        // 将来的には、ここで is_pro フラグを使って、WORLD のより重いが高音質な
-        // アルゴリズムに分岐させたり、kFramePeriod を短くして時間解像度を上げる
-        // などの処理が可能です。
-        VOSE_Synthesis(tl_scratch.f0.data(), output_frames,
-                       tl_scratch.spec_ptrs.data(), tl_scratch.ap_ptrs.data(),
-                       fft_size, kFramePeriod, pp.ev->fs,
-                       static_cast<int>(note_samples), note_bufs[idx].data());
+
+        // ★ VOSE_Synthesis_local を使用（ローカル scratch を渡す）
+        VOSE_Synthesis_local(
+            scratch,
+            scratch.f0.data(), output_frames,
+            scratch.spec_ptrs.data(), scratch.ap_ptrs.data(),
+            fft_size, kFramePeriod, pp.ev->fs,
+            static_cast<int>(note_samples), note_bufs[idx].data());
     };
 
     {
@@ -858,21 +895,18 @@ DLLEXPORT void execute_render(NoteEvent* notes, int note_count, const char* outp
 
         for (int i = 0; i < note_count; ++i) {
             if (prepass[i].state != NoteState::RENDERABLE) continue;
-
-            futures.push_back(std::async(std::launch::async,
-                                         synthesize_note, i));
+            futures.push_back(std::async(std::launch::async, synthesize_note, i));
 
             if (static_cast<int>(futures.size()) >= max_threads) {
                 for (auto& f : futures) f.get();
                 futures.clear();
             }
         }
-
         for (auto& f : futures) f.get();
     }
 
     // ----------------------------------------------------------------
-    // パス2-B: 書き込みフェーズ
+    // パス2-B: 書き込みフェーズ（順次・変更なし）
     // ----------------------------------------------------------------
     int64_t current_offset     = pre_buffer_samples;
     bool    last_note_rendered = false;
@@ -890,7 +924,7 @@ DLLEXPORT void execute_render(NoteEvent* notes, int note_count, const char* outp
             break;
         }
 
-        const int64_t note_samples = pp.note_samples;
+        const int64_t note_samples  = pp.note_samples;
         const OtoEntry& current_oto = pp.oto ? *pp.oto : kDefaultOto;
 
         const int64_t pre_samples  =
@@ -911,11 +945,11 @@ DLLEXPORT void execute_render(NoteEvent* notes, int note_count, const char* outp
     }
 
     // ----------------------------------------------------------------
-    // 【有料化の要】Pro版は 32bit出力、Free版は 16bit出力
+    // WAV 書き出し
     // ----------------------------------------------------------------
     wavwrite(full_song_buffer.data() + pre_buffer_samples,
              static_cast<int>(total_samples),
              out_fs, out_bit_depth, output_path);
 }
- 
+
 } // extern "C"
