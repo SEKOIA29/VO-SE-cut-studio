@@ -157,36 +157,51 @@ class VOSEBridge:
         count = len(notes_list)
         if count == 0:
             return
+
         NotesArray = NoteEvent * count
         c_notes    = NotesArray()
         self.keep_alive = []
+
         for i, data in enumerate(notes_list):
             phoneme = str(data.get("phoneme", "a"))
-            pitch   = list(data.get("pitch",   [150.0] * 50))
-            gender  = list(data.get("gender",  [0.5]   * 50))
-            tension = list(data.get("tension", [0.5]   * 50))
-            breath  = list(data.get("breath",  [0.1]   * 50))
+            
+            # 安全のため、基本となる長さを確定 (デフォルトは50点)
+            pitch   = list(data.get("pitch", [150.0] * 50))
+            length  = len(pitch)
+            
+            # pitchの長さに他パラメータの長さを強制同期させてSegfaultを絶対防ぐ
+            gender  = list(data.get("gender",  [0.5] * length))[:length]
+            tension = list(data.get("tension", [0.5] * length))[:length]
+            breath  = list(data.get("breath",  [0.1] * length))[:length]
+            
             c_wav = phoneme.encode("utf-8")
-            c_p   = (ctypes.c_double * len(pitch))(*pitch)
-            c_g   = (ctypes.c_double * len(gender))(*gender)
-            c_t   = (ctypes.c_double * len(tension))(*tension)
-            c_b   = (ctypes.c_double * len(breath))(*breath)
+            c_p   = (ctypes.c_double * length)(*pitch)
+            c_g   = (ctypes.c_double * length)(*gender)
+            c_t   = (ctypes.c_double * length)(*tension)
+            c_b   = (ctypes.c_double * length)(*breath)
+            
+            # PythonのGC(ゴミ箱ポイ)からポインタを保護する防壁
             self.keep_alive.extend([c_wav, c_p, c_g, c_t, c_b])
+            
             c_notes[i].wav_path         = c_wav
-            c_notes[i].pitch_length     = len(pitch)
+            c_notes[i].pitch_length     = length
             c_notes[i].pitch_curve      = c_p
             c_notes[i].gender_curve     = c_g
             c_notes[i].tension_curve    = c_t
             c_notes[i].breath_curve     = c_b
-            c_notes[i].offset_ms        = float(data.get("offset",        0.0))
-            c_notes[i].consonant_ms     = float(data.get("consonant",     0.0))
-            c_notes[i].cutoff_ms        = float(data.get("cutoff",        0.0))
+            c_notes[i].offset_ms        = float(data.get("offset", 0.0))
+            c_notes[i].consonant_ms     = float(data.get("consonant", 0.0))
+            c_notes[i].cutoff_ms        = float(data.get("cutoff", 0.0))
             c_notes[i].pre_utterance_ms = float(data.get("pre_utterance", 0.0))
-            c_notes[i].overlap_ms       = float(data.get("overlap",       0.0))
+            c_notes[i].overlap_ms       = float(data.get("overlap", 0.0))
+            
         try:
-            self.lib.execute_render(c_notes, count, output_file.encode("utf-8"))
+            out_bytes = output_file.encode("utf-8")
+            self.lib.execute_render(c_notes, count, out_bytes)
         except Exception as e:
-            print(f"❌ execute_render error: {e}\n{traceback.format_exc()}")
+            # E501を確実に回避する改行スタイル
+            err_msg = f"❌ execute_render error: {e}\n{traceback.format_exc()}"
+            print(err_msg)
 
 
 # ══════════════════════════════════════════════════════════════════
