@@ -736,7 +736,7 @@ class TimelineTrack(QFrame):
         border = QColor(c).lighter(145)
         border.setAlpha(190)
         p.setPen(QPen(border, 0.75))       
-        p.drawRoundedRect(rect, 5.0, 5.0)0)
+        p.drawRoundedRect(rect, 5.0, 5.0)
 
         # 波形
         wf: List[float] = clip.get("waveform", [])
