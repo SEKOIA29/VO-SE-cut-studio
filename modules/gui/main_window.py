@@ -726,16 +726,16 @@ class TimelineTrack(QFrame):
 
         if CX + CW < self.HEADER_W or CX > self.width():
             return
-        
+
         c: QColor = clip["color"]
         rect = QRectF(CX, CY, CW, CH)
-        
+
         fill = QColor(c)
         fill.setAlpha(175)
         p.setBrush(QBrush(fill))
         border = QColor(c).lighter(145)
         border.setAlpha(190)
-        p.setPen(QPen(border, 0.75))       
+        p.setPen(QPen(border, 0.75))
         p.drawRoundedRect(rect, 5.0, 5.0)
 
         # 波形
@@ -743,7 +743,7 @@ class TimelineTrack(QFrame):
         if wf and CW > 8:
             self._paint_waveform(p, wf, CX, CY, CW, CH, c)
         else:
-            # 上部グロス
+            # 上部グロス (Appleの立体感を出すグラデーション層)
             p.setBrush(QBrush(QColor(255, 255, 255, 26)))
             p.setPen(Qt.PenStyle.NoPen)
             p.drawRoundedRect(QRectF(CX + 1, CY + 1, CW - 2, (CH - 2) * 0.35), 4.0, 4.0)
