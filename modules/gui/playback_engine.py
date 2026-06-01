@@ -161,11 +161,15 @@ class DecoderWorker(QObject):
                     pass
                 # キューをフラッシュ
                 while not self.video_queue.empty():
-                    try: self.video_queue.get_nowait()
-                    except queue.Empty: break
+                    try:
+                        self.video_queue.get_nowait()
+                    except queue.Empty:
+                        break
                 while not self.audio_queue.empty():
-                    try: self.audio_queue.get_nowait()
-                    except queue.Empty: break
+                    try:
+                        self.audio_queue.get_nowait()
+                    except queue.Empty:
+                        break
                 self.seek_done.emit(target)
 
             # ── ポーズ中はスリープして待機 ──
@@ -186,8 +190,10 @@ class DecoderWorker(QObject):
                         pts = float(frame.pts * frame.time_base) if frame.pts else 0.0
                         # キューが満杯なら古いフレームを捨てて最新優先
                         if self.video_queue.full():
-                            try: self.video_queue.get_nowait()
-                            except queue.Empty: pass
+                            try:
+                                self.video_queue.get_nowait()
+                            except queue.Empty:
+                                pass
                         self.video_queue.put((pts, img), block=False)
 
                     elif packet.stream == self._audio_stream:
@@ -418,8 +424,10 @@ class PlaybackEngine(QObject):
         # キューをフラッシュ
         for q in (self._video_queue, self._audio_queue):
             while not q.empty():
-                try: q.get_nowait()
-                except queue.Empty: break
+                try:
+                    q.get_nowait()
+                except queue.Empty:
+                    break
 
         self._stop_event.clear()
         self._seek_event.clear()
