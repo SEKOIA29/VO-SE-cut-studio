@@ -1,0 +1,315 @@
+Run pyright .
+/Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/main_window.py
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/main_window.py:74:5 - error: "QUndoCommand" is unknown import symbol (reportAttributeAccessIssue)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/main_window.py:74:5 - error: Type of "QUndoCommand" is unknown (reportUnknownVariableType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/main_window.py:75:5 - error: "QUndoStack" is unknown import symbol (reportAttributeAccessIssue)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/main_window.py:75:5 - error: Type of "QUndoStack" is unknown (reportUnknownVariableType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/main_window.py:299:18 - error: Base class type is unknown, obscuring type of derived class (reportUntypedBaseClass)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/main_window.py:301:9 - warning: Type of "__init__" is unknown (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/main_window.py:315:21 - error: Base class type is unknown, obscuring type of derived class (reportUntypedBaseClass)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/main_window.py:317:9 - warning: Type of "__init__" is unknown (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/main_window.py:331:19 - error: Base class type is unknown, obscuring type of derived class (reportUntypedBaseClass)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/main_window.py:335:9 - warning: Type of "__init__" is unknown (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/main_window.py:350:19 - error: Base class type is unknown, obscuring type of derived class (reportUntypedBaseClass)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/main_window.py:360:9 - warning: Type of "__init__" is unknown (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/main_window.py:537:9 - warning: Type of parameter "undo_stack" is partially unknown
+    Parameter type is "Unknown | None" (reportUnknownParameterType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/main_window.py:545:9 - warning: Type of "undo_stack" is partially unknown
+    Type of "undo_stack" is "Unknown | None" (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/main_window.py:603:12 - warning: Type of "undo_stack" is partially unknown
+    Type of "undo_stack" is "Unknown | None" (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/main_window.py:604:13 - warning: Type of "undo_stack" is unknown (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/main_window.py:604:13 - warning: Type of "push" is unknown (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/main_window.py:701:32 - warning: Type of "undo_stack" is partially unknown
+    Type of "undo_stack" is "Unknown | None" (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/main_window.py:708:21 - warning: Type of "undo_stack" is unknown (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/main_window.py:708:21 - warning: Type of "push" is unknown (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/main_window.py:722:21 - warning: Type of "undo_stack" is unknown (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/main_window.py:722:21 - warning: Type of "push" is unknown (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/main_window.py:744:16 - warning: Type of "undo_stack" is partially unknown
+    Type of "undo_stack" is "Unknown | None" (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/main_window.py:745:17 - warning: Type of "undo_stack" is unknown (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/main_window.py:745:17 - warning: Type of "push" is unknown (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/main_window.py:873:24 - warning: Type of parameter "undo_stack" is unknown (reportUnknownParameterType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/main_window.py:876:9 - warning: Type of "undo_stack" is unknown (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/main_window.py:947:44 - warning: Type of "undo_stack" is unknown (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/main_window.py:947:44 - warning: Argument type is unknown
+    Argument corresponds to parameter "undo_stack" in function "__init__" (reportUnknownArgumentType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/main_window.py:1121:9 - warning: Type of "undo_stack" is unknown (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/main_window.py:1122:9 - warning: Type of "undo_stack" is unknown (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/main_window.py:1122:9 - warning: Type of "setUndoLimit" is unknown (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/main_window.py:1139:30 - error: "_on_seek_from_header" is protected and used outside of the class in which it is declared (reportPrivateUsage)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/main_window.py:1139:60 - error: Type of parameter "sec" is unknown (reportUnknownLambdaType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/main_window.py:1139:91 - warning: Argument type is unknown
+    Argument corresponds to parameter "sec" in function "seek" (reportUnknownArgumentType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/main_window.py:1188:40 - warning: Type of "undo_stack" is unknown (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/main_window.py:1188:40 - warning: Argument type is unknown
+    Argument corresponds to parameter "undo_stack" in function "__init__" (reportUnknownArgumentType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/main_window.py:1379:22 - warning: Type of "undo_stack" is unknown (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/main_window.py:1379:22 - warning: Type of "undo" is unknown (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/main_window.py:1380:22 - warning: Type of "undo_stack" is unknown (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/main_window.py:1380:22 - warning: Type of "redo" is unknown (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/main_window.py:1381:28 - warning: Type of "undo_stack" is unknown (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/main_window.py:1381:28 - warning: Type of "redo" is unknown (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/main_window.py:1394:13 - warning: Type of "toggle_play" is unknown (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/main_window.py:1394:28 - error: Cannot access attribute "toggle_play" for class "TransportController"
+    Attribute "toggle_play" is unknown (reportAttributeAccessIssue)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/main_window.py:1621:36 - error: "_tracks" is protected and used outside of the class in which it is declared (reportPrivateUsage)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/main_window.py:1644:13 - warning: Type of "undo_stack" is unknown (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/main_window.py:1644:13 - warning: Type of "setClean" is unknown (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/main_window.py:1665:36 - error: "_tracks" is protected and used outside of the class in which it is declared (reportPrivateUsage)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/main_window.py:1674:38 - error: "_tracks" is protected and used outside of the class in which it is declared (reportPrivateUsage)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/main_window.py:1675:39 - error: "_tracks" is protected and used outside of the class in which it is declared (reportPrivateUsage)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/main_window.py:1718:9 - warning: Type of "undo_stack" is unknown (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/main_window.py:1718:9 - warning: Type of "clear" is unknown (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/main_window.py:1724:16 - warning: Type of "undo_stack" is unknown (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/main_window.py:1724:16 - warning: Type of "isClean" is unknown (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/main_window.py:1729:28 - warning: Argument type is unknown
+    Argument corresponds to parameter "event" in function "closeEvent" (reportUnknownArgumentType)
+/Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:34:12 - error: Import "av" could not be resolved (reportMissingImports)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:38:5 - error: "_AV_AVAILABLE" is constant (because it is uppercase) and cannot be redefined (reportConstantRedefinition)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:45:12 - warning: Import "pyaudio" could not be resolved from source (reportMissingModuleSource)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:49:5 - error: "_AUDIO_AVAILABLE" is constant (because it is uppercase) and cannot be redefined (reportConstantRedefinition)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:93:9 - warning: Type of parameter "video_queue" is partially unknown
+    Parameter type is "Queue[Unknown]" (reportUnknownParameterType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:93:22 - error: Expected type arguments for generic class "Queue" (reportMissingTypeArgument)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:94:9 - warning: Type of parameter "audio_queue" is partially unknown
+    Parameter type is "Queue[Unknown]" (reportUnknownParameterType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:94:22 - error: Expected type arguments for generic class "Queue" (reportMissingTypeArgument)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:99:9 - warning: Type of "video_queue" is partially unknown
+    Type of "video_queue" is "Queue[Unknown]" (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:100:9 - warning: Type of "audio_queue" is partially unknown
+    Type of "audio_queue" is "Queue[Unknown]" (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:132:31 - warning: Type of "open" is unknown (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:132:31 - error: "av" is possibly unbound (reportPossiblyUnboundVariable)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:137:9 - error: Type of "container" is partially unknown
+    Type of "container" is "Unknown | object | None" (reportUnknownVariableType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:137:21 - warning: Type of "_container" is partially unknown
+    Type of "_container" is "Unknown | object | None" (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:138:9 - error: Type of "streams" is unknown (reportUnknownVariableType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:138:19 - warning: Type of "streams" is unknown (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:138:29 - error: Cannot access attribute "streams" for class "object"
+    Attribute "streams" is unknown (reportAttributeAccessIssue)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:138:29 - error: "streams" is not a known attribute of "None" (reportOptionalMemberAccess)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:141:13 - warning: Type of "_video_stream" is unknown (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:141:34 - warning: Type of "video" is unknown (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:142:13 - warning: Type of "_video_stream" is unknown (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:147:13 - warning: Type of "_audio_stream" is unknown (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:147:34 - warning: Type of "audio" is unknown (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:151:9 - error: Type of "selected" is partially unknown
+    Type of "selected" is "list[Unknown]" (reportUnknownVariableType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:151:27 - error: Type of "s" is partially unknown
+    Type of "s" is "Unknown | None" (reportUnknownVariableType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:151:33 - warning: Type of "_video_stream" is partially unknown
+    Type of "_video_stream" is "Unknown | None" (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:151:53 - warning: Type of "_audio_stream" is partially unknown
+    Type of "_audio_stream" is "Unknown | None" (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:156:13 - error: Type of "packet" is unknown (reportUnknownVariableType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:156:23 - warning: Type of "demux" is unknown (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:156:33 - error: Cannot access attribute "demux" for class "object"
+    Attribute "demux" is unknown (reportAttributeAccessIssue)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:156:33 - error: "demux" is not a known attribute of "None" (reportOptionalMemberAccess)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:166:21 - warning: Type of "seek" is unknown (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:166:31 - error: Cannot access attribute "seek" for class "object"
+    Attribute "seek" is unknown (reportAttributeAccessIssue)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:166:31 - error: "seek" is not a known attribute of "None" (reportOptionalMemberAccess)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:166:40 - warning: Argument type is unknown
+    Argument corresponds to parameter "x" in function "__new__" (reportUnknownArgumentType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:166:49 - warning: Type of "time_base" is unknown (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:166:49 - error: "av" is possibly unbound (reportPossiblyUnboundVariable)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:170:27 - warning: Type of "video_queue" is partially unknown
+    Type of "video_queue" is "Queue[Unknown]" (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:172:25 - warning: Type of "video_queue" is partially unknown
+    Type of "video_queue" is "Queue[Unknown]" (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:175:27 - warning: Type of "audio_queue" is partially unknown
+    Type of "audio_queue" is "Queue[Unknown]" (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:177:25 - warning: Type of "audio_queue" is partially unknown
+    Type of "audio_queue" is "Queue[Unknown]" (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:190:21 - error: Type of "frame" is unknown (reportUnknownVariableType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:190:30 - warning: Type of "decode" is unknown (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:194:24 - warning: Type of "stream" is unknown (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:194:41 - warning: Type of "_video_stream" is partially unknown
+    Type of "_video_stream" is "Unknown | None" (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:196:31 - warning: Type of "_frame_to_qimage" is partially unknown
+    Type of "_frame_to_qimage" is "(frame: Unknown) -> QImage" (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:196:53 - warning: Argument type is unknown
+    Argument corresponds to parameter "frame" in function "_frame_to_qimage" (reportUnknownArgumentType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:197:37 - warning: Type of "pts" is unknown (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:197:37 - warning: Argument type is unknown
+    Argument corresponds to parameter "x" in function "__new__" (reportUnknownArgumentType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:197:49 - warning: Type of "time_base" is unknown (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:197:69 - warning: Type of "pts" is unknown (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:199:28 - warning: Type of "video_queue" is partially unknown
+    Type of "video_queue" is "Queue[Unknown]" (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:201:33 - warning: Type of "video_queue" is partially unknown
+    Type of "video_queue" is "Queue[Unknown]" (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:204:25 - warning: Type of "video_queue" is partially unknown
+    Type of "video_queue" is "Queue[Unknown]" (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:204:25 - warning: Type of "put" is partially unknown
+    Type of "put" is "(item: Unknown, block: bool = True, timeout: float | None = None) -> None" (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:206:26 - warning: Type of "stream" is unknown (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:206:43 - warning: Type of "_audio_stream" is partially unknown
+    Type of "_audio_stream" is "Unknown | None" (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:208:25 - error: Type of "resampled" is unknown (reportUnknownVariableType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:208:37 - warning: Type of "to_ndarray" is unknown (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:209:37 - warning: Type of "pts" is unknown (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:209:37 - warning: Argument type is unknown
+    Argument corresponds to parameter "x" in function "__new__" (reportUnknownArgumentType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:209:49 - warning: Type of "time_base" is unknown (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:209:69 - warning: Type of "pts" is unknown (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:210:32 - warning: Type of "audio_queue" is partially unknown
+    Type of "audio_queue" is "Queue[Unknown]" (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:211:29 - warning: Type of "audio_queue" is partially unknown
+    Type of "audio_queue" is "Queue[Unknown]" (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:211:29 - warning: Type of "put" is partially unknown
+    Type of "put" is "(item: Unknown, block: bool = True, timeout: float | None = None) -> None" (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:211:56 - warning: Type of "tobytes" is unknown (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:213:20 - warning: Type of "AVError" is unknown (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:213:20 - error: "av" is possibly unbound (reportPossiblyUnboundVariable)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:217:9 - warning: Type of "video_queue" is partially unknown
+    Type of "video_queue" is "Queue[Unknown]" (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:217:9 - warning: Type of "put" is partially unknown
+    Type of "put" is "(item: Unknown, block: bool = True, timeout: float | None = None) -> None" (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:220:26 - warning: Type of parameter "frame" is unknown (reportUnknownParameterType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:220:26 - error: Type annotation is missing for parameter "frame" (reportMissingParameterType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:222:9 - error: Type of "rgb" is unknown (reportUnknownVariableType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:222:15 - warning: Type of "to_rgb" is unknown (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:223:9 - error: Type of "arr" is unknown (reportUnknownVariableType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:223:15 - warning: Type of "to_ndarray" is unknown (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:224:9 - error: Type of "h" is unknown (reportUnknownVariableType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:224:12 - error: Type of "w" is unknown (reportUnknownVariableType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:224:15 - error: Type of "_" is unknown (reportUnknownVariableType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:224:19 - warning: Type of "shape" is unknown (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:225:23 - warning: Type of "tobytes" is unknown (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:225:23 - warning: Argument type is unknown
+    Argument corresponds to parameter "arg__1" in function "__init__" (reportUnknownArgumentType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:225:38 - warning: Argument type is unknown
+    Argument corresponds to parameter "width" in function "__init__" (reportUnknownArgumentType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:225:41 - warning: Argument type is unknown
+    Argument corresponds to parameter "height" in function "__init__" (reportUnknownArgumentType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:225:44 - warning: Argument type is unknown
+    Argument corresponds to parameter "bytes_per_line" in function "__init__" (reportUnknownArgumentType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:234:24 - warning: Type of parameter "audio_queue" is partially unknown
+    Parameter type is "Queue[Unknown]" (reportUnknownParameterType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:234:37 - error: Expected type arguments for generic class "Queue" (reportMissingTypeArgument)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:235:9 - warning: Type of "audio_queue" is partially unknown
+    Type of "audio_queue" is "Queue[Unknown]" (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:268:18 - error: "pyaudio" is possibly unbound (reportPossiblyUnboundVariable)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:270:24 - error: "pyaudio" is possibly unbound (reportPossiblyUnboundVariable)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:283:21 - error: Type of "pts" is unknown (reportUnknownVariableType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:283:21 - error: Variable "pts" is not accessed (reportUnusedVariable)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:283:26 - error: Type of "pcm_bytes" is unknown (reportUnknownVariableType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:283:38 - warning: Type of "audio_queue" is partially unknown
+    Type of "audio_queue" is "Queue[Unknown]" (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:284:34 - warning: Argument type is unknown
+    Argument corresponds to parameter "frames" in function "write" (reportUnknownArgumentType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:318:9 - warning: Type of parameter "preview_view" is unknown (reportUnknownParameterType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:318:9 - error: Type annotation is missing for parameter "preview_view" (reportMissingParameterType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:319:9 - warning: Type of parameter "timeline_header" is unknown (reportUnknownParameterType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:319:9 - error: Type annotation is missing for parameter "timeline_header" (reportMissingParameterType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:324:9 - warning: Type of "_preview" is unknown (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:325:9 - warning: Type of "_header" is unknown (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:335:28 - error: Expected type arguments for generic class "Queue" (reportMissingTypeArgument)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:336:28 - error: Expected type arguments for generic class "Queue" (reportMissingTypeArgument)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:347:42 - warning: Type of "_audio_queue" is partially unknown
+    Type of "_audio_queue" is "Queue[Unknown]" (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:368:13 - error: Type of "container" is unknown (reportUnknownVariableType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:368:25 - warning: Type of "open" is unknown (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:368:25 - error: "av" is possibly unbound (reportPossiblyUnboundVariable)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:369:25 - warning: Type of "duration" is unknown (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:369:25 - warning: Argument type is unknown
+    Argument corresponds to parameter "x" in function "__new__" (reportUnknownArgumentType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:370:13 - warning: Type of "close" is unknown (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:433:13 - error: Type of "q" is partially unknown
+    Type of "q" is "Queue[Unknown]" (reportUnknownVariableType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:433:19 - warning: Type of "_video_queue" is partially unknown
+    Type of "_video_queue" is "Queue[Unknown]" (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:433:38 - warning: Type of "_audio_queue" is partially unknown
+    Type of "_audio_queue" is "Queue[Unknown]" (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:489:13 - warning: Type of "_video_queue" is partially unknown
+    Type of "_video_queue" is "Queue[Unknown]" (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:490:13 - warning: Type of "_audio_queue" is partially unknown
+    Type of "_audio_queue" is "Queue[Unknown]" (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:494:39 - error: Argument of type "str | None" cannot be assigned to parameter "path" of type "str" in function "set_file"
+    Type "str | None" is not assignable to type "str"
+      "None" is not assignable to "str" (reportArgumentType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:524:17 - error: Type of "item" is unknown (reportUnknownVariableType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:524:24 - warning: Type of "_video_queue" is partially unknown
+    Type of "_video_queue" is "Queue[Unknown]" (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:529:17 - error: Type of "pts" is unknown (reportUnknownVariableType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:529:22 - error: Type of "img" is unknown (reportUnknownVariableType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:532:21 - warning: Type of "video_queue" is unknown (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:532:21 - warning: Type of "put" is unknown (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:532:26 - error: Cannot access attribute "video_queue" for class "PlaybackEngine*"
+    Attribute "video_queue" is unknown (reportAttributeAccessIssue)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:534:17 - error: Type of "frame_item" is partially unknown
+    Type of "frame_item" is "tuple[Unknown, Unknown]" (reportUnknownVariableType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:539:13 - error: Type of "_" is unknown (reportUnknownVariableType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:539:16 - error: Type of "img" is unknown (reportUnknownVariableType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:540:30 - warning: Argument type is unknown
+    Argument corresponds to parameter "img" in function "_show_frame" (reportUnknownArgumentType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:550:9 - error: Type of "scene" is unknown (reportUnknownVariableType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:550:17 - warning: Type of "_preview" is unknown (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:550:17 - warning: Type of "_scene" is unknown (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:553:13 - error: Type of "item" is unknown (reportUnknownVariableType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:553:21 - warning: Type of "items" is unknown (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:558:21 - warning: Type of "removeItem" is unknown (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:562:9 - error: Type of "item" is unknown (reportUnknownVariableType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:562:16 - warning: Type of "addPixmap" is unknown (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:568:9 - warning: Type of "setPos" is unknown (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:569:9 - warning: Type of "setZValue" is unknown (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:575:9 - warning: Type of "_header" is unknown (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:575:9 - warning: Type of "set_playhead" is unknown (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:623:9 - warning: Type of parameter "engine" is unknown (reportUnknownParameterType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:623:9 - error: Type annotation is missing for parameter "engine" (reportMissingParameterType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:624:9 - warning: Type of parameter "btn_top" is unknown (reportUnknownParameterType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:624:9 - error: Type annotation is missing for parameter "btn_top" (reportMissingParameterType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:625:9 - warning: Type of parameter "btn_prev" is unknown (reportUnknownParameterType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:625:9 - error: Type annotation is missing for parameter "btn_prev" (reportMissingParameterType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:626:9 - warning: Type of parameter "btn_play" is unknown (reportUnknownParameterType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:626:9 - error: Type annotation is missing for parameter "btn_play" (reportMissingParameterType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:627:9 - warning: Type of parameter "btn_next" is unknown (reportUnknownParameterType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:627:9 - error: Type annotation is missing for parameter "btn_next" (reportMissingParameterType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:628:9 - warning: Type of parameter "btn_end" is unknown (reportUnknownParameterType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:628:9 - error: Type annotation is missing for parameter "btn_end" (reportMissingParameterType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:629:9 - warning: Type of parameter "export_btn" is partially unknown
+    Parameter type is "Unknown | None" (reportUnknownParameterType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:629:9 - error: Type annotation is missing for parameter "export_btn" (reportMissingParameterType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:630:9 - warning: Type of parameter "export_callback" is partially unknown
+    Parameter type is "((...) -> Unknown) | None" (reportUnknownParameterType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:630:35 - error: Expected type arguments for generic class "Callable" (reportMissingTypeArgument)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:633:9 - warning: Type of "_engine" is unknown (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:634:9 - warning: Type of "_btn_play" is unknown (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:637:9 - warning: Type of "clicked" is unknown (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:637:9 - warning: Type of "connect" is unknown (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:637:33 - warning: Type of "go_to_start" is unknown (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:638:9 - warning: Type of "clicked" is unknown (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:638:9 - warning: Type of "connect" is unknown (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:638:34 - warning: Type of "step_backward" is unknown (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:639:9 - warning: Type of "clicked" is unknown (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:639:9 - warning: Type of "connect" is unknown (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:640:9 - warning: Type of "clicked" is unknown (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:640:9 - warning: Type of "connect" is unknown (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:640:34 - warning: Type of "step_forward" is unknown (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:641:9 - warning: Type of "clicked" is unknown (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:641:9 - warning: Type of "connect" is unknown (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:641:33 - warning: Type of "go_to_end" is unknown (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:644:13 - warning: Type of "clicked" is unknown (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:644:13 - warning: Type of "connect" is unknown (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:646:9 - warning: Type of "playback_started" is unknown (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:646:9 - warning: Type of "connect" is unknown (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:647:9 - warning: Type of "playback_paused" is unknown (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:647:9 - warning: Type of "connect" is unknown (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:648:9 - warning: Type of "playback_stopped" is unknown (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:648:9 - warning: Type of "connect" is unknown (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:651:12 - warning: Type of "_engine" is unknown (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:651:12 - warning: Type of "is_playing" is unknown (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:652:13 - warning: Type of "_engine" is unknown (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:652:13 - warning: Type of "pause" is unknown (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:654:13 - warning: Type of "_engine" is unknown (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:654:13 - warning: Type of "play" is unknown (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:658:9 - warning: Type of "_btn_play" is unknown (reportUnknownMemberType)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:658:9 - warning: Type of "setText" is unknown (reportUnknownMemberType)
+74 errors, 170 warnings, 0 informations
+Error: Process completed with exit code 1.
