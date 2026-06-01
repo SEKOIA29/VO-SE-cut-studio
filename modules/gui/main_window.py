@@ -14,42 +14,75 @@ Phase 2 変更点 (全面リライト):
   ■ OS 別ライブラリパス自動解決 (video_engine.py 委譲)
   ■ キーボードショートカット (Space=再生, Z=Undo, Ctrl+S=保存 …)
 """
+
 from __future__ import annotations
 
+import ctypes
 import json
 import os
 import platform
 import sys
 import traceback
 import wave
-import ctypes
-from typing import Any, Dict, List, Optional, Tuple, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
 import video_engine as _ve_mod
 
-from PySide6.QtWidgets import (
-    QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
-    QSplitter, QTextEdit, QPushButton, QLabel, QListWidget, QListWidgetItem,
-    QFrame, QGraphicsView, QGraphicsScene, QScrollBar, QGraphicsPixmapItem,
-    QStatusBar, QMenu, QFileDialog, QUndoStack, QUndoCommand,
-    QSlider, QSizePolicy, QScrollArea, QToolBar, QInputDialog,
-)
+from playback_engine import PlaybackEngine, TransportController
+
 from PySide6.QtCore import (
-    Qt, QRect, QRectF, Signal, Slot, QTimer, QPointF,
+    QRect,
+    QRectF,
+    Qt,
+    QTimer,
+    Signal,
+    Slot,
 )
 from PySide6.QtGui import (
-    QColor, QBrush, QPainter, QPen, QFont, QPaintEvent, QMouseEvent,
-    QPixmap, QPainterPath, QFontMetrics, QContextMenuEvent, QWheelEvent,
-    QKeySequence, QAction, QShortcut, QLinearGradient,
+        QBrush,
+    QColor,
+    QContextMenuEvent,
+    QFont,
+    QFontMetrics,
+    QKeySequence,
+    QMouseEvent,
+    QPainter,
+    QPainterPath,
+    QPaintEvent,
+    QPen,
+    QPixmap,
+    QShortcut,
+    QWheelEvent,
+)
+from PySide6.QtWidgets import (
+    QApplication,
+    QFileDialog,
+    QFrame,
+    QGraphicsPixmapItem,
+    QGraphicsScene,
+    QGraphicsView,
+    QHBoxLayout,
+    QInputDialog,
+    QLabel,
+    QListWidget,
+    QListWidgetItem,
+    QMainWindow,
+    QMenu,
+    QPushButton,
+    QScrollBar,
+    QSplitter,
+    QStatusBar,
+    QTextEdit,
+    QUndoCommand,
+    QUndoStack,
+    QVBoxLayout,
+    QWidget,
 )
 
-from playback_engine import PlaybackEngine, TransportController
 
 _SYS = platform.system()
 _FONT_FAMILY = (
-    ".AppleSystemUIFont" if _SYS == "Darwin"
-    else "Segoe UI"       if _SYS == "Windows"
-    else "Inter"
+    ".AppleSystemUIFont" if _SYS == "Darwin" else "Segoe UI" if _SYS == "Windows" else "Inter"
 )
 
 # ══════════════════════════════════════════════════════════════════
