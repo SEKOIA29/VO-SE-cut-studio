@@ -1,3 +1,4 @@
+4s
 Run pyright .
 /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/main_window.py
   /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/main_window.py:74:5 - error: "QUndoCommand" is unknown import symbol (reportAttributeAccessIssue)
@@ -67,7 +68,7 @@ Run pyright .
   /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/main_window.py:1729:28 - warning: Argument type is unknown
     Argument corresponds to parameter "event" in function "closeEvent" (reportUnknownArgumentType)
 /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py
-  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:34:12 - error: Import "av" could not be resolved (reportMissingImports)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:34:12 - warning: Import "av" could not be resolved (reportMissingImports)
   /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:38:5 - error: "_AV_AVAILABLE" is constant (because it is uppercase) and cannot be redefined (reportConstantRedefinition)
   /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:45:12 - warning: Import "pyaudio" could not be resolved from source (reportMissingModuleSource)
   /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:49:5 - error: "_AUDIO_AVAILABLE" is constant (because it is uppercase) and cannot be redefined (reportConstantRedefinition)
@@ -311,5 +312,5 @@ Run pyright .
   /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:654:13 - warning: Type of "play" is unknown (reportUnknownMemberType)
   /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:658:9 - warning: Type of "_btn_play" is unknown (reportUnknownMemberType)
   /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:658:9 - warning: Type of "setText" is unknown (reportUnknownMemberType)
-74 errors, 170 warnings, 0 informations
+73 errors, 171 warnings, 0 informations
 Error: Process completed with exit code 1.
