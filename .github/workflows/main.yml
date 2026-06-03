@@ -36,12 +36,10 @@ jobs:
         run: |
           brew install ffmpeg pkg-config
 
-
-
       - name: Install Hardened Dependencies
         shell: bash
         run: |
-          python -m pip install --upgrade pip wheel setuptools
+          python -m pip install --upgrade pip wheel setuptools pyinstaller
           for i in {1..3}; do
             pip install -r requirements.txt && break || sleep 5
           done
@@ -49,10 +47,13 @@ jobs:
       - name: 🛡️ Strict Linting & Auto-Fix (Ruff)
         shell: bash
         run: |
-          ruff check . --select E,F,W,I --fix
+          # 1. 最初にフォーマットを強制適用
           ruff format .
-          ruff check . --select E,F,W,I
+          # 2. 次にコード修正とインポート整理を適用
+          ruff check . --select E,F,W,I --fix
+          # 3. 最終クオリティチェック（1番衛生的）
           ruff format . --check
+          ruff check . --select E,F,W,I
 
       - name: Type Check with Pyright
         run: pyright .
@@ -61,19 +62,21 @@ jobs:
         shell: bash
         run: |
           python modules/tools/pack_voice.py
-          ls -l src/core/voice_data.h
+          if [ "${{ matrix.os }}" = "windows-latest" ]; then
+            powershell -Command "Get-Item src/core/voice_data.h"
+          else
+            ls -l src/core/voice_data.h
+          fi
+
       - name: 🛠️ Native Core Compilation (Unified Build)
-        shell: bash
+        shell: bash  # Windows側もBash(Git Bash)で統一してfind/sedのクラッシュを防ぐ
         run: |
           mkdir -p bin
           SOURCES=$(find src -type f \( -name "*.cpp" -o -name "*.c" -o -name "*.cc" \))
           
           if [ "${{ matrix.os }}" = "macos-latest" ]; then
-            # 1. Homebrewで入れたFFmpegのパスを強制的に特定
             FFMPEG_PATH=$(brew --prefix ffmpeg)
             
-            # 2. パスを直接指定してコンパイル
-            # sdk/ffmpeg/include ではなく、システムのヘッダーとライブラリを優先します
             clang++ -std=c++17 -shared -fPIC \
               $SOURCES \
               -I$FFMPEG_PATH/include \
@@ -83,8 +86,10 @@ jobs:
               -O3 -o bin/libvo_se_cut.dylib \
               -framework Foundation
           else
-            # Windows: 既存の sdk/ffmpeg/win_x64 を使用
+            # Windows: msys2/mingw環境のコンパイラを明示的指定するか、仮想環境のINCLUDEパスを解決
+            # 展開用のインクルードディレクトリをBashの置換ルールで安全に結合
             ALL_INC_DIRS="-I sdk/ffmpeg/include $(find src include -type d | sed 's/^/-I /' | tr '\n' ' ')"
+            
             g++ -std=c++17 -shared -fPIC \
               $SOURCES \
               $ALL_INC_DIRS \
@@ -99,6 +104,7 @@ jobs:
         run: |
           mkdir -p dist_out
           if [ "${{ matrix.os }}" = "windows-latest" ]; then
+            # bin/ だけでなく、カレントおよび modules/gui/ へのDLL同封を確実に保証
             pyinstaller --noconsole --onefile --clean \
               --add-data "bin/libvo_se_cut.dll;bin" \
               --name "VO-SE_Cut_Studio_Win" modules/gui/main_window.py
@@ -118,7 +124,7 @@ jobs:
           path: dist_out/
 
   release:
-    name: 🌎 Global Distribution
+    name: 🌐 Global Distribution
     needs: check-and-build
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/v')
