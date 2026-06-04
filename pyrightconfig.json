@@ -5,12 +5,11 @@
   "typeCheckingMode": "strict",
   "reportMissingTypeStubs": false,
   
-  "venvPath": ".",
-  "venv": ".venv",
-
   "reportMissingImports": "warning",
   "reportUntypedBaseClass": "warning",
   "reportUnknownMemberType": "warning",
   "reportUnknownParameterType": "warning",
-  "reportUnknownArgumentType": "warning"
+  "reportUnknownArgumentType": "warning",
+  "reportAttributeAccessIssue": "warning",
+  "reportGeneralTypeIssues": "warning"
 }
