@@ -4,8 +4,12 @@
   "pythonVersion": "3.10",
   "typeCheckingMode": "strict",
   "reportMissingTypeStubs": false,
+  
+  "venvPath": ".",
+  "venv": ".venv",
+
   "reportMissingImports": "warning",
-  "reportUntypedBaseClass": "warning", 
+  "reportUntypedBaseClass": "warning",
   "reportUnknownMemberType": "warning",
   "reportUnknownParameterType": "warning",
   "reportUnknownArgumentType": "warning"
