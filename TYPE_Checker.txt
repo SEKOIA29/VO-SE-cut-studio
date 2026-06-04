@@ -1,17 +1,16 @@
-4s
-Run pyright .
+Run # Python の実行環境に含まれるモジュールパスを引き連れて静的解析をかける
 /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/main_window.py
   /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/main_window.py:74:5 - error: "QUndoCommand" is unknown import symbol (reportAttributeAccessIssue)
   /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/main_window.py:74:5 - error: Type of "QUndoCommand" is unknown (reportUnknownVariableType)
   /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/main_window.py:75:5 - error: "QUndoStack" is unknown import symbol (reportAttributeAccessIssue)
   /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/main_window.py:75:5 - error: Type of "QUndoStack" is unknown (reportUnknownVariableType)
-  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/main_window.py:299:18 - error: Base class type is unknown, obscuring type of derived class (reportUntypedBaseClass)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/main_window.py:299:18 - warning: Base class type is unknown, obscuring type of derived class (reportUntypedBaseClass)
   /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/main_window.py:301:9 - warning: Type of "__init__" is unknown (reportUnknownMemberType)
-  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/main_window.py:315:21 - error: Base class type is unknown, obscuring type of derived class (reportUntypedBaseClass)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/main_window.py:315:21 - warning: Base class type is unknown, obscuring type of derived class (reportUntypedBaseClass)
   /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/main_window.py:317:9 - warning: Type of "__init__" is unknown (reportUnknownMemberType)
-  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/main_window.py:331:19 - error: Base class type is unknown, obscuring type of derived class (reportUntypedBaseClass)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/main_window.py:331:19 - warning: Base class type is unknown, obscuring type of derived class (reportUntypedBaseClass)
   /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/main_window.py:335:9 - warning: Type of "__init__" is unknown (reportUnknownMemberType)
-  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/main_window.py:350:19 - error: Base class type is unknown, obscuring type of derived class (reportUntypedBaseClass)
+  /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/main_window.py:350:19 - warning: Base class type is unknown, obscuring type of derived class (reportUntypedBaseClass)
   /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/main_window.py:360:9 - warning: Type of "__init__" is unknown (reportUnknownMemberType)
   /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/main_window.py:537:9 - warning: Type of parameter "undo_stack" is partially unknown
     Parameter type is "Unknown | None" (reportUnknownParameterType)
@@ -312,5 +311,5 @@ Run pyright .
   /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:654:13 - warning: Type of "play" is unknown (reportUnknownMemberType)
   /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:658:9 - warning: Type of "_btn_play" is unknown (reportUnknownMemberType)
   /Users/runner/work/VO-SE-cut-studio/VO-SE-cut-studio/modules/gui/playback_engine.py:658:9 - warning: Type of "setText" is unknown (reportUnknownMemberType)
-73 errors, 171 warnings, 0 informations
+69 errors, 175 warnings, 0 informations
 Error: Process completed with exit code 1.
