@@ -4,7 +4,8 @@
   "pythonVersion": "3.10",
   "typeCheckingMode": "strict",
   "reportMissingTypeStubs": false,
-  "reportMissingImports": "warning", 
+  "reportMissingImports": "warning",
+  "reportUntypedBaseClass": "warning", 
   "reportUnknownMemberType": "warning",
   "reportUnknownParameterType": "warning",
   "reportUnknownArgumentType": "warning"
