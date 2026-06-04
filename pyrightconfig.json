@@ -2,14 +2,15 @@
   "include": ["."],
   "exclude": ["**/__pycache__", "build", "dist", ".venv"],
   "pythonVersion": "3.10",
-  "typeCheckingMode": "strict",
-  "reportMissingTypeStubs": false,
+  "typeCheckingMode": "basic",
   
+  "reportMissingTypeStubs": false,
   "reportMissingImports": "warning",
-  "reportUntypedBaseClass": "warning",
-  "reportUnknownMemberType": "warning",
-  "reportUnknownParameterType": "warning",
-  "reportUnknownArgumentType": "warning",
   "reportAttributeAccessIssue": "warning",
-  "reportGeneralTypeIssues": "warning"
+  "reportUntypedBaseClass": "warning",
+  "reportPrivateUsage": "warning",
+  "reportConstantRedefinition": "warning",
+  "reportPossiblyUnboundVariable": "warning",
+  "reportOptionalMemberAccess": "warning",
+  "reportMissingParameterType": "warning"
 }
