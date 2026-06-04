@@ -12,5 +12,6 @@
   "reportConstantRedefinition": "warning",
   "reportPossiblyUnboundVariable": "warning",
   "reportOptionalMemberAccess": "warning",
-  "reportMissingParameterType": "warning"
+  "reportMissingParameterType": "warning",
+  "reportArgumentType": "warning"
 }
