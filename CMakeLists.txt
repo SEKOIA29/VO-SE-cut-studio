@@ -1,6 +1,8 @@
 # SDK内のスタティックライブラリを指定
 set(FFMPEG_LIB_DIR ${CMAKE_SOURCE_DIR}/sdk/ffmpeg/lib)
 
+pkg_check_modules(FFMPEG REQUIRED libavformat libavcodec libavutil libswscale libavfilter)
+
 target_link_libraries(vo_se_cut PRIVATE 
     ${FFMPEG_LIB_DIR}/libavformat.a
     ${FFMPEG_LIB_DIR}/libavcodec.a
