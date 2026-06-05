@@ -184,11 +184,11 @@ bool EDL::deserialize(const std::string& json_str) {
         std::cerr << "[VOSE][EDL] パース結果が空\n";
         return false;
     }
-    entries_.clear();
+    entries.clear();
     int valid_count = 0;
     for (auto& e : parsed) {
         if (e.out_point > e.in_point) {
-            entries_.push_back(e);
+            entries.push_back(e);
             if (e.enabled) ++valid_count;
         } else {
             std::cerr << "[VOSE][EDL] 無効エントリをスキップ:"
@@ -197,19 +197,22 @@ bool EDL::deserialize(const std::string& json_str) {
         }
     }
     std::cerr << "[VOSE][EDL] パース完了: 有効=" << valid_count
-              << " / 合計=" << entries_.size() << " エントリ\n";
+              << " / 合計=" << entries.size() << " エントリ\n";
     return valid_count > 0;
 }
 
+
 std::vector<EDLEntry> EDL::getEnabledEntries() const {
     std::vector<EDLEntry> result;
-    result.reserve(entries_.size());
-    for (const auto& e : entries_)
-        if (e.enabled && e.out_point > e.in_point)
+    result.reserve(entries.size()); // entries_ から アンダースコアを削除
+    for (const auto& e : entries)   // entries_ から アンダースコアを削除
+    {
+        if (e.enabled && e.out_point > e.in_point) {
             result.push_back(e);
+        }
+    }
     return result;
 }
-
 // ════════════════════════════════════════════════════════════════════
 //  ユーティリティ
 // ════════════════════════════════════════════════════════════════════
