@@ -77,11 +77,9 @@ class EDL {
 public:
     std::vector<EDLEntry> entries;
     bool deserialize(const std::string& json_str);
-    std::vector<EDLEntry> getEnabledEntries() const; // 宣言のみにする
-        std::vector<EDLEntry> enabled;
-        for (const auto& e : entries) if (e.enabled) enabled.push_back(e);
-        return enabled;
-    }
+    
+    // getEnabledEntries は完全に宣言のみ（末尾セミコロン）にします
+    std::vector<EDLEntry> getEnabledEntries() const; 
 };
 
 /**
