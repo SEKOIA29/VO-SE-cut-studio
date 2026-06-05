@@ -77,17 +77,17 @@ jobs:
           if [ "${{ matrix.os }}" = "macos-latest" ]; then
             FFMPEG_PATH=$(brew --prefix ffmpeg)
             
+            # 🟢 macOS向けコンパイル: -lavfilter を確実に追加
             clang++ -std=c++17 -shared -fPIC \
               $SOURCES \
               -I$FFMPEG_PATH/include \
               $(find src include -type d | sed 's/^/-I /' | tr '\n' ' ') \
               -L$FFMPEG_PATH/lib \
-              -lavformat -lavcodec -lavutil -lswscale -lswresample \
+              -lavformat -lavfilter -lavcodec -lswscale -lswresample -lavutil \
               -O3 -o bin/libvo_se_cut.dylib \
               -framework Foundation
           else
             # Windows: msys2/mingw環境のコンパイラを明示的指定するか、仮想環境のINCLUDEパスを解決
-            # 展開用のインクルードディレクトリをBashの置換ルールで安全に結合
             ALL_INC_DIRS="-I sdk/ffmpeg/include $(find src include -type d | sed 's/^/-I /' | tr '\n' ' ')"
             
             g++ -std=c++17 -shared -fPIC \
@@ -104,15 +104,20 @@ jobs:
         run: |
           mkdir -p dist_out
           if [ "${{ matrix.os }}" = "windows-latest" ]; then
-            # bin/ だけでなく、カレントおよび modules/gui/ へのDLL同封を確実に保証
             pyinstaller --noconsole --onefile --clean \
               --add-data "bin/libvo_se_cut.dll;bin" \
               --name "VO-SE_Cut_Studio_Win" modules/gui/main_window.py
             mv dist/VO-SE_Cut_Studio_Win.exe dist_out/
           else
+            # 🟢 macOS向けパッケージング: PyInstaller実行時にローカル共有ライブラリの探索パスを通す
+            # 💡 HomebrewのFFmpeg（.dylib）を実行バイナリがロードできるように、インストールツリーにデータを追加
+            FFMPEG_PATH=$(brew --prefix ffmpeg)
             pyinstaller --noconsole --windowed --clean \
               --add-data "bin/libvo_se_cut.dylib:bin" \
+              --add-binary "$FFMPEG_PATH/lib/libav*.dylib:." \
+              --add-binary "$FFMPEG_PATH/lib/libsw*.dylib:." \
               --name "VO-SE_Cut_Studio_Mac" modules/gui/main_window.py
+            
             codesign --force --deep --sign - "dist/VO-SE_Cut_Studio_Mac.app"
             cd dist && zip -ry ../dist_out/VO-SE_Cut_Studio_Mac.zip VO-SE_Cut_Studio_Mac.app && cd ..
           fi
