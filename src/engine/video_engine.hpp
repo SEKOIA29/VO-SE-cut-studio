@@ -9,10 +9,17 @@
 
 // FFmpeg forward declarations
 // 構造体のみを前方宣言し、enumの衝突を避けるため詳細はcpp側で処理します
-struct AVFormatContext;
-struct AVCodecContext;
-struct SwsContext;
-struct AVRational;
+extern "C" {
+    struct AVFormatContext;
+    struct AVCodecContext;
+    struct SwsContext;
+    struct AVRational;
+    
+    // 今後 cpp 側だけでなく hpp 側でも直接 FFmpeg の型を拡張する場合に備え、
+    // フィルター関連の構造体もここに安全に宣言しておきます
+    struct AVFilterGraph;
+    struct AVFilterContext;
+}
 
 namespace vose {
 
