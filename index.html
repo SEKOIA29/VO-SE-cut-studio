@@ -3,48 +3,128 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Axral (Japan) - Clone</title>
-    <link rel="stylesheet" href="style.css">
+    <meta name="description" content="Axral | 既存の『要塞』を崩す、次世代軽量エンジン 'VO-SE' 公式ポータル。">
+    <title>Axral (Japan)</title>
+    
+    <!-- 他の製品ページと共通のTailwind & フォント環境 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Noto+Sans+JP:wght@400;700;900&display=swap" rel="stylesheet">
+
+    <style>
+        html { scroll-behavior: smooth; }
+        body {
+            font-family: 'Inter', 'Noto Sans JP', sans-serif;
+            background-color: #000;
+            color: #fff;
+            overflow-x: hidden;
+        }
+        /* Apple風の美しい半透明ナビゲーション */
+        .global-nav {
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        /* テキストグラデーション */
+        .vocal-gradient {
+            background: linear-gradient(135deg, #000 0%, #555 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .studio-gradient {
+            background: linear-gradient(135deg, #fff 0%, #888 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        /* リンクのホバーエフェクト */
+        .cta-link {
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .cta-link:hover {
+            opacity: 0.7;
+            transform: translateX(2px);
+        }
+    </style>
 </head>
-<body>
+<body class="antialiased">
 
-    <nav class="global-nav">
-        <div class="nav-content">
-
-            <a href="#">トップ</a>
-            <a href="#">axral Workspace</a>
-            <!--<a href="#">aura book</a>-->
-            <!--<a href="#"> 1</a>-->
-            <!--<a href="#">2</a>-->
-            <a href="#">Support</a>
+    <!-- グローバルナビゲーション -->
+    <nav class="global-nav fixed top-0 w-full z-50 h-12 flex items-center justify-center px-4">
+        <div class="w-full max-w-4xl flex justify-between items-center text-xs tracking-widest text-zinc-400 font-light">
+            <a href="#" class="hover:text-white transition-colors font-bold text-sm tracking-normal text-white">axral</a>
+            <div class="flex gap-8 md:gap-12">
+                <a href="#" class="hover:text-white transition-colors">Workspace</a>
+                <a href="#vocal" class="hover:text-white transition-colors">vocal</a>
+                <a href="#studio" class="hover:text-white transition-colors">cut studio</a>
+                <a href="#" class="hover:text-white transition-colors">Support</a>
+            </div>
         </div>
     </nav>
 
-    <main>
-        <section class="hero iphone-15-pro">
-            <div class="hero-text">
-                <h1>VO-SE vocal</h1>
-                <h2>合成にスピードを</h2>
-                <div class="cta">
-                    <a href="vocal.html" class="link">さらに詳しく ></a> 
-                    <a href="#" class="link">ダウンロード ></a>
+    <main class="w-full pt-12">
+        
+        <!-- セクション1: VO-SE vocal（白の世界・静寂と洗練） -->
+        <section id="vocal" class="h-[calc(100vh-3rem)] bg-[#fff] text-[#1a1a1a] flex flex-col justify-between items-center py-24 px-6 relative overflow-hidden border-b border-zinc-200">
+            <div class="absolute inset-0 bg-cover bg-center opacity-[0.02] pointer-events-none" style="background-image: url('images/hero-bg.jpg');"></div>
+            
+            <!-- 上部コンテンツ -->
+            <div class="text-center mt-12 z-10">
+                <p class="text-xs md:text-sm tracking-[0.4em] text-red-600 font-black uppercase mb-3">VO-SE Project</p>
+                <h1 class="text-5xl md:text-8xl font-black tracking-tighter leading-none mb-4 vocal-gradient">
+                    VO-SE vocal
+                </h1>
+                <p class="text-gray-500 text-lg md:text-2xl font-light tracking-widest">
+                    合成にスピードを。顔、色々な。声、爆速。心、自由。
+                </p>
+            </div>
+
+            <!-- 下部CTA -->
+            <div class="flex flex-col items-center gap-4 z-10 mb-6">
+                <div class="flex gap-8 text-sm md:text-base font-medium">
+                    <a href="vocal.html" class="cta-link text-blue-600 flex items-center gap-1">
+                        さらに詳しく <span class="text-xs">＞</span>
+                    </a>
+                    <a href="vocal.html#download" class="cta-link text-zinc-900 flex items-center gap-1">
+                        ダウンロード <span class="text-xs">＞</span>
+                    </a>
                 </div>
             </div>
-            <div class="hero-image">
-                </div>
         </section>
 
-        <section class="hero macbook-air">
-            <div class="hero-text dark">
-                <h1>VO-SE cut studio</h1>
-                <h2>| 声と連携したスムーズな編集を。</h2>
-                <div class="cta">
-                    <a href="studio.html" class="link">さらに詳しく ></
-                    <a href="#" class="link">ダウンロード ></a>
+        <!-- セクション2: VO-SE cut studio（黒の世界・破壊と革新） -->
+        <section id="studio" class="h-screen bg-[#000] text-white flex flex-col justify-between items-center py-28 px-6 relative overflow-hidden">
+            <div class="absolute inset-0 bg-cover bg-center opacity-10 pointer-events-none" style="background-image: url('images/hero-bg.jpg');"></div>
+            
+            <!-- 上部コンテンツ -->
+            <div class="text-center mt-12 z-10">
+                <p class="text-xs md:text-sm tracking-[0.4em] text-red-500 font-black uppercase mb-3">The Fortress Breaker</p>
+                <h1 class="text-5xl md:text-8xl font-black tracking-tighter leading-none mb-4 studio-gradient">
+                    VO-SE cut studio
+                </h1>
+                <p class="text-zinc-400 text-lg md:text-2xl font-light tracking-widest">
+                    無音を焼き払う。声と完全にシンクロする動画編集。
+                </p>
+            </div>
+
+            <!-- 下部CTA -->
+            <div class="flex flex-col items-center gap-4 z-10 mb-12">
+                <div class="flex gap-8 text-sm md:text-base font-medium">
+                    <a href="studio.html" class="cta-link text-blue-400 flex items-center gap-1">
+                        さらに詳しく <span class="text-xs">＞</span>
+                    </a>
+                    <a href="studio.html#download" class="cta-link text-zinc-300 flex items-center gap-1">
+                        ダウンロード <span class="text-xs">＞</span>
+                    </a>
                 </div>
             </div>
         </section>
+
     </main>
+
+    <!-- ミニマルフッター -->
+    <footer class="bg-black py-12 border-t border-zinc-900 text-center text-[10px] tracking-[0.5em] text-zinc-600 uppercase">
+        VO-SE Project 2026 | operated by axral
+    </footer>
 
 </body>
 </html>
